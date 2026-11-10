@@ -7,6 +7,9 @@ __pycache__/
 # Personal archives and default working directories
 inputs/
 output/
+gallery/
+exports/
+trash/
 *.[zZ][iI][pP]
 
 # Resume checkpoints may contain personal file paths

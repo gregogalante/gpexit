@@ -30,12 +30,12 @@ class ResumeTests(unittest.TestCase):
                 raise KeyboardInterrupt()
             return extract_member(*args)
 
-        with patch('gpexit.extract_member', side_effect=interrupt_second):
+        with patch('archive_tasks.extract_member', side_effect=interrupt_second):
             with self.assertRaises(KeyboardInterrupt):
                 import_archives([self.source], self.output, workers=1)
         first = self.output / '2020/01/photos/IMG_20200102.jpg'
         self.assertEqual(first.read_bytes(), b'first')
-        with patch('gpexit.extract_member', wraps=extract_member) as extraction:
+        with patch('archive_tasks.extract_member', wraps=extract_member) as extraction:
             import_archives([self.source], self.output, workers=1)
         self.assertEqual([call.args[1] for call in extraction.call_args_list], [1])
         self.assertEqual((self.output / '2020/02/photos/IMG_20200203.jpg').read_bytes(), b'second')
@@ -44,7 +44,7 @@ class ResumeTests(unittest.TestCase):
     def test_completed_entries_are_skipped_when_inputs_are_unchanged(self):
         self.make_archive([('IMG_20200102.jpg', b'first'), ('IMG_20200203.jpg', b'second')])
         import_archives([self.source], self.output, workers=1)
-        with patch('gpexit.extract_member', wraps=extract_member) as extraction:
+        with patch('archive_tasks.extract_member', wraps=extract_member) as extraction:
             import_archives([self.source], self.output, workers=1)
         extraction.assert_not_called()
 
@@ -53,7 +53,7 @@ class ResumeTests(unittest.TestCase):
         import_archives([self.source], self.output, workers=1)
         missing = self.output / '2020/01/photos/IMG_20200102.jpg'
         missing.unlink()
-        with patch('gpexit.extract_member', wraps=extract_member) as extraction:
+        with patch('archive_tasks.extract_member', wraps=extract_member) as extraction:
             import_archives([self.source], self.output, workers=1)
         self.assertEqual([call.args[1] for call in extraction.call_args_list], [0])
         self.assertEqual(missing.read_bytes(), b'first')
@@ -65,7 +65,7 @@ class ResumeTests(unittest.TestCase):
         self.make_archive([('IMG_20200102.jpg', b'other')])
         self.assertEqual(self.source.stat().st_size, old_stat.st_size)
         os.utime(self.source, ns=(old_stat.st_atime_ns, old_stat.st_mtime_ns))
-        with patch('gpexit.extract_member', wraps=extract_member) as extraction:
+        with patch('archive_tasks.extract_member', wraps=extract_member) as extraction:
             import_archives([self.source], self.output, workers=1)
         self.assertEqual(extraction.call_count, 1)
         photos = self.output / '2020/01/photos'
