@@ -23,6 +23,12 @@ VIDEO = {'.mp4', '.mov', '.avi', '.m4v', '.mpg', '.mpeg', '.3gp', '.3g2', '.mkv'
 CHUNK = 1024 * 1024
 
 
+def configure_output():
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, 'reconfigure') and getattr(stream, 'errors', None) != 'backslashreplace':
+            stream.reconfigure(errors='backslashreplace')
+
+
 def media_kind(name):
     suffix = Path(name).suffix.lower()
     return 'photos' if suffix in PHOTO else 'videos' if suffix in VIDEO else None
@@ -289,6 +295,7 @@ def close_worker_archive():
 
 def extract_member(archive_path, member_index, password, staging):
     global _worker_archive, _worker_archive_path
+    configure_output()
     if _worker_archive_path != archive_path:
         close_worker_archive()
         _worker_archive = pyzipper.AESZipFile(archive_path)
@@ -370,6 +377,7 @@ def extracted_members(archive, archive_path, passwords, staging, workers, execut
 
 
 def import_archives(paths, output, workers=None):
+    configure_output()
     workers = worker_count(available_cpus()) if workers is None else workers
     if workers < 1:
         raise ValueError('Worker count must be at least 1.')
@@ -444,6 +452,7 @@ def ask_yes(prompt):
 
 
 def write_archives(output, password):
+    configure_output()
     archive_dir = output / 'archives'
     archive_dir.mkdir(exist_ok=True)
     years = sorted(path for path in output.iterdir() if path.is_dir() and (re.fullmatch(r'(?:19|20)\d{2}', path.name) or path.name == 'Unknown year'))
@@ -467,6 +476,7 @@ def write_archives(output, password):
 
 
 def main():
+    configure_output()
     parser = argparse.ArgumentParser(description='GPExit - Google Photos Exit: incremental photo and video archive')
     parser.add_argument('zip', nargs='*', type=Path, help='ZIP files to import (default: inputs/*.zip)')
     parser.add_argument('--workers', type=int, default=worker_count(available_cpus()), help='Parallel workers (default: available CPUs, up to 4)')
