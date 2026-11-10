@@ -1,0 +1,16 @@
+# Local environments and caches
+.venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+
+# Personal archives and default working directories
+inputs/
+output/
+*.[zZ][iI][pP]
+
+# Resume checkpoints may contain personal file paths
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
