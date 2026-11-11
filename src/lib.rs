@@ -1,4 +1,5 @@
 pub mod archive;
+pub mod cleanup;
 pub mod config;
 pub mod dates;
 pub mod files;

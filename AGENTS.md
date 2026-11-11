@@ -9,6 +9,7 @@ GPExit is a standalone Rust/Tauri desktop application for importing Google Photo
 - `src/archive.rs`: streaming input verification, bounded extraction workers, deduplication, metadata association, checkpoints, and annual ZIP export.
 - `src/dates.rs`, `src/files.rs`, `src/gallery.rs`: source dates, safe file operations, review decisions, corrections, trash, and statistics.
 - `src/config.rs`: three-directory configuration and atomic persistence.
+- `src/cleanup.rs`: incremental local analysis and bounded assisted-cleanup suggestions.
 - `src/task.rs`: serialized tasks, progress, logs, and cooperative cancellation.
 - `src/service.rs`: desktop operations and cached gallery snapshots.
 - `src/preview.rs`: bounded image conversion and cached thumbnails.

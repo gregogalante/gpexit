@@ -7,7 +7,10 @@ use std::{
     fs::{self, File},
     io::BufReader,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
     time::UNIX_EPOCH,
 };
 
@@ -87,21 +90,31 @@ pub fn source(engine: &Arc<Engine>, relative: &str) -> Result<Value> {
     if kind == "videos" {
         return Ok(json!({"path":path,"kind":kind}));
     }
-    let metadata = fs::metadata(&path)?;
-    let modified = metadata.modified()?.duration_since(UNIX_EPOCH)?.as_nanos();
-    let key = hex::encode(Sha256::digest(
-        format!("v1:{}:{}:{modified}", path.display(), metadata.len()).as_bytes(),
-    ));
-    let destination = engine.cache_path.join(format!("{key}.jpg"));
     let _guard = engine
         .preview_lock
         .lock()
         .map_err(|_| anyhow::anyhow!("Preview unavailable"))?;
-    if !destination.is_file() {
-        generate(&path, &destination)?;
-        prune_cache(&engine.cache_path, 512 * 1024 * 1024)?;
-    }
+    let destination = cached_thumbnail(&path, &engine.cache_path)?;
     Ok(json!({"path":destination,"kind":kind}))
+}
+
+pub fn cached_thumbnail(path: &Path, cache: &Path) -> Result<PathBuf> {
+    let metadata = fs::metadata(path)?;
+    let modified = metadata.modified()?.duration_since(UNIX_EPOCH)?.as_nanos();
+    let key = hex::encode(Sha256::digest(
+        format!("v1:{}:{}:{modified}", path.display(), metadata.len()).as_bytes(),
+    ));
+    fs::create_dir_all(cache)?;
+    let destination = cache.join(format!("{key}.jpg"));
+    if !destination.is_file() {
+        generate(path, &destination)?;
+        // Batch directory scans when cleanup generates thousands of thumbnails.
+        static GENERATED: AtomicUsize = AtomicUsize::new(0);
+        if GENERATED.fetch_add(1, Ordering::Relaxed).is_multiple_of(32) {
+            prune_cache(cache, 512 * 1024 * 1024)?;
+        }
+    }
+    Ok(destination)
 }
 
 pub fn prune_cache(cache: &Path, maximum_bytes: u64) -> Result<()> {
@@ -123,7 +136,11 @@ pub fn prune_cache(cache: &Path, maximum_bytes: u64) -> Result<()> {
         if total <= maximum_bytes {
             break;
         }
-        fs::remove_file(path)?;
+        match fs::remove_file(path) {
+            Ok(()) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.into()),
+        }
         total -= metadata.len();
     }
     Ok(())

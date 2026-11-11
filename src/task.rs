@@ -18,6 +18,7 @@ pub struct TaskStatus {
     pub done: u64,
     pub total: u64,
     pub cancel_requested: bool,
+    pub result: Option<Value>,
 }
 
 impl Default for TaskStatus {
@@ -29,6 +30,7 @@ impl Default for TaskStatus {
             done: 0,
             total: 0,
             cancel_requested: false,
+            result: None,
         }
     }
 }
@@ -127,26 +129,33 @@ impl TaskManager {
             .name("gpexit-task".into())
             .spawn(move || {
                 let outcome = catch_unwind(AssertUnwindSafe(|| operation(context.clone())));
-                let status = match outcome {
+                let (status, result) = match outcome {
                     Ok(Ok(result)) => {
                         context.log(result.to_string());
-                        "Completato".to_string()
+                        let status = if context.is_cancelled() {
+                            "Interrotto: i file completati sono conservati"
+                        } else {
+                            "Completato"
+                        };
+                        (status.to_string(), Some(result))
                     }
                     Ok(Err(error)) => {
                         context.log(format!("{error:#}"));
-                        if context.is_cancelled() {
+                        let status = if context.is_cancelled() {
                             "Interrotto: i file completati sono conservati".into()
                         } else {
                             "Fallito".into()
-                        }
+                        };
+                        (status, None)
                     }
                     Err(_) => {
                         context.log("Unexpected task failure; completed files remain available.");
-                        "Fallito".into()
+                        ("Fallito".into(), None)
                     }
                 };
                 let mut state = manager.state.0.lock().unwrap_or_else(|e| e.into_inner());
                 state.status = status;
+                state.result = result;
                 state.running = false;
                 manager.state.1.notify_all();
             });

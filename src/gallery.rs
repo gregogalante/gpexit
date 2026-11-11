@@ -363,12 +363,41 @@ pub fn trashed_hashes(folders: &Folders) -> Result<HashSet<String>> {
 }
 
 pub fn trash_file(folders: &Folders, relative_path: &str) -> Result<String> {
+    trash_file_hashed(folders, relative_path, files::file_hash)
+}
+
+pub fn trash_file_checked(
+    folders: &Folders,
+    relative_path: &str,
+    context: &crate::task::TaskContext,
+) -> Result<String> {
+    trash_file_hashed(folders, relative_path, |path| {
+        let mut last_report = std::time::Instant::now();
+        files::file_hash_checked(path, |done, total| {
+            context.check_cancelled()?;
+            if last_report.elapsed() >= std::time::Duration::from_secs(5) {
+                context.log(format!(
+                    "Checking {relative_path}: {:.0}%",
+                    done as f64 * 100.0 / total.max(1) as f64
+                ));
+                last_report = std::time::Instant::now();
+            }
+            Ok(())
+        })
+    })
+}
+
+fn trash_file_hashed(
+    folders: &Folders,
+    relative_path: &str,
+    hash: impl FnOnce(&Path) -> Result<String>,
+) -> Result<String> {
     let media = files::media_path(&folders.gallery, relative_path)?;
     if folders.trash().is_symlink() {
         bail!("Trash cannot be a symbolic link");
     }
     let relative_path = relative(&folders.gallery, &media)?;
-    let checksum = files::file_hash(&media)?;
+    let checksum = hash(&media)?;
     let id = uuid::Uuid::new_v4().simple().to_string();
     let folder = folders.trash().join(&id);
     let destination = folder.join(&relative_path);

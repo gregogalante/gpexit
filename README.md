@@ -27,6 +27,21 @@ Image thumbnails are generated lazily and cached outside the gallery. JPEG decod
 
 Dates use this priority: manual decisions, Google `photoTakenTime`, filename date, then supported original EXIF date when appropriate. Annual archive paths provide a fallback. Google timestamps use UTC; changing a calendar date retains the existing UTC clock or uses midnight when no valid clock exists.
 
+## Assisted cleanup
+
+Open **Pulizia assistita** to review four types of suggestions:
+
+- **File grandi:** Photos and videos above the selected logical file size, largest first. This view is available immediately.
+- **Scatti ravvicinati:** Photos with nearby capture times. The chosen maximum gap is applied within groups of at most 12 files and a 60-second span. Filename, Google UTC, and EXIF-local clocks are kept separate. Portable manual date corrections take priority over filename calendar dates.
+- **Foto simili:** Approximate visual similarity from a 64-bit difference hash, compared against each group's reference image. Adjust the distance threshold to widen or narrow suggestions.
+- **Dettaglio basso:** Low estimated thumbnail sharpness, measured with Laplacian variance. Adjust the threshold to review more or fewer candidates.
+
+Click **Analizza le foto** for the visual views, follow progress in Activity, then return to cleanup. Analysis uses existing native image decoders; no models are downloaded and no photos leave the computer. Results, including unsupported decoder failures, are cached in `gallery/.gpexit-cleanup.sqlite3` by path, size, modification time, and algorithm version. Changed files need new analysis; unchanged files reuse previous results after restarting. This cache is derived data and can be rebuilt.
+
+No file is preselected. Select individual files or explicitly select a group, review the selected count and logical byte total, then move up to 500 files to the recoverable trash. The move runs as a cancellable task, including hashing large videos, and reports moved, failed, and interrupted work. Completed moves remain recoverable in Gallery's Trash tab. Files marked **Tieni** are excluded and protected on the backend. A stale or invalid selection is rejected before any file is moved; files changing during processing are skipped. No permanent deletion is offered.
+
+Suggestions require human review. Visual hashes do not establish that two photos have identical content. The search bounds candidate buckets and group sizes to avoid quadratic comparisons, so it can miss matches; near-uniform/low-texture hashes are excluded from similarity groups. Low thumbnail sharpness is not proof of blur: smooth backgrounds, illustrations, noise, and resolution affect scores. Burst timing does not establish that scenes are the same. This edition does not perform face identification or semantic categorization.
+
 ## Data and portability
 
 The desktop application uses these gallery files:

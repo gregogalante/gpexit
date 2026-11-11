@@ -24,15 +24,31 @@ pub fn media_kind(name: &str) -> Option<&'static str> {
 }
 
 pub fn file_hash(path: &Path) -> Result<String> {
+    file_hash_checked(path, |_, _| Ok(()))
+}
+
+pub fn file_hash_checked(
+    path: &Path,
+    mut progress: impl FnMut(u64, u64) -> Result<()>,
+) -> Result<String> {
     let mut file = File::open(path).with_context(|| format!("Cannot read {}", path.display()))?;
+    let before = file.metadata()?;
+    progress(0, before.len())?;
     let mut digest = Sha256::new();
     let mut buffer = vec![0; 1024 * 1024];
+    let mut done = 0;
     loop {
         let read = file.read(&mut buffer)?;
         if read == 0 {
             break;
         }
         digest.update(&buffer[..read]);
+        done += read as u64;
+        progress(done, before.len())?;
+    }
+    let after = fs::metadata(path)?;
+    if before.len() != after.len() || before.modified()? != after.modified()? {
+        bail!("File changed while being checked: {}", path.display());
     }
     Ok(hex::encode(digest.finalize()))
 }

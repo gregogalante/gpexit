@@ -1,5 +1,5 @@
 use crate::{
-    archive,
+    archive, cleanup,
     config::{self, Folders},
     files, gallery,
     task::TaskManager,
@@ -25,6 +25,7 @@ pub struct Engine {
     gallery_lock: Mutex<Option<(PathBuf, File)>>,
     gallery_cache: Mutex<Snapshot>,
     conflict_cache: Mutex<Snapshot>,
+    cleanup_cache: Mutex<std::collections::HashMap<String, Arc<cleanup::CleanupResults>>>,
     pub preview_lock: Mutex<()>,
     startup_error: Mutex<Option<String>>,
 }
@@ -58,6 +59,7 @@ impl Engine {
             gallery_lock: Mutex::new(None),
             gallery_cache: Mutex::new(None),
             conflict_cache: Mutex::new(None),
+            cleanup_cache: Mutex::new(std::collections::HashMap::new()),
             preview_lock: Mutex::new(()),
             startup_error: Mutex::new(error),
         });
@@ -102,6 +104,9 @@ impl Engine {
             .context("Select inputs, gallery and exports in Settings first.")
     }
     pub fn invalidate(&self) {
+        if let Ok(mut cache) = self.cleanup_cache.lock() {
+            cache.clear();
+        }
         if let Ok(mut cache) = self.gallery_cache.lock() {
             *cache = None;
         }
@@ -239,6 +244,8 @@ impl Engine {
                     bail!("Le password di esportazione non coincidono.");
                 }
                 vec![]
+            } else if action == "analyze" {
+                vec![]
             } else {
                 bail!("Unknown task");
             };
@@ -253,6 +260,8 @@ impl Engine {
                         workers as usize,
                         &context,
                     )
+                } else if action == "analyze" {
+                    cleanup::analyze(&folders, &engine.cache_path, &context)
                 } else {
                     archive::export_archives(&folders, &password, &context)
                 };
@@ -266,6 +275,124 @@ impl Engine {
         }
         let _guard = self.idle_guard()?;
         match (method, url.path()) {
+            ("GET", "/api/cleanup") => {
+                let mode = if text("mode").is_empty() {
+                    "large"
+                } else {
+                    text("mode")
+                };
+                let min_bytes = query
+                    .get("min_bytes")
+                    .map(|v| v.parse::<u64>())
+                    .transpose()?
+                    .unwrap_or(10 * 1024 * 1024);
+                let gap = query
+                    .get("gap_seconds")
+                    .map(|v| v.parse::<u64>())
+                    .transpose()?
+                    .unwrap_or(10);
+                let distance = query
+                    .get("distance")
+                    .map(|v| v.parse::<u32>())
+                    .transpose()?
+                    .unwrap_or(5);
+                let quality = query
+                    .get("quality_threshold")
+                    .map(|v| v.parse::<f64>())
+                    .transpose()?
+                    .unwrap_or(60.0);
+                if !["large", "bursts", "similar", "quality"].contains(&mode)
+                    || !(1..=60).contains(&gap)
+                    || distance > 10
+                    || !quality.is_finite()
+                    || !(0.0..=5000.0).contains(&quality)
+                {
+                    bail!("Invalid cleanup filter.");
+                }
+                let key = format!("{mode}:{min_bytes}:{gap}:{distance}:{quality}");
+                let mut cache = lock(&self.cleanup_cache)?;
+                if text("refresh") == "1" {
+                    cache.clear();
+                }
+                if !cache.contains_key(&key) {
+                    if cache.len() >= 4 {
+                        cache.clear();
+                    }
+                    cache.insert(
+                        key.clone(),
+                        Arc::new(cleanup::results(
+                            &folders, mode, min_bytes, gap, distance, quality,
+                        )?),
+                    );
+                }
+                let result = cache.get(&key).context("Cleanup results unavailable")?;
+                let mut response = paginate(&result.items, page);
+                response["summary"] = result.summary.clone();
+                Ok(response)
+            }
+            ("POST", "/api/cleanup/trash") => {
+                let selected = body
+                    .get("items")
+                    .and_then(Value::as_array)
+                    .context("Select files to move to trash.")?;
+                if selected.is_empty() || selected.len() > 500 {
+                    bail!("Select between 1 and 500 files.");
+                }
+                let protected: std::collections::HashSet<_> = gallery::list_gallery(&folders)?
+                    .into_iter()
+                    .filter(|item| item["kept"] == true)
+                    .filter_map(|item| item["path"].as_str().map(str::to_owned))
+                    .collect();
+                let mut paths = std::collections::BTreeMap::new();
+                for item in selected {
+                    let relative = field(item, "path")?;
+                    let fingerprint = field(item, "fingerprint")?;
+                    if paths
+                        .insert(relative.to_string(), fingerprint.to_string())
+                        .is_some()
+                    {
+                        bail!("Duplicate selection.");
+                    }
+                    if protected.contains(relative) {
+                        bail!("A selected file is marked Keep; refresh the cleanup view.");
+                    }
+                    let path = files::media_path(&folders.gallery, relative)?;
+                    if cleanup::fingerprint(&path)? != fingerprint {
+                        bail!("A selected file has changed; refresh the cleanup view before continuing.");
+                    }
+                }
+                let engine = self.clone();
+                self.tasks.start(move |context| {
+                    let _guard = lock(&engine.gate)?;
+                    let mut moved = vec![];
+                    let mut failed = vec![];
+                    let total = paths.len() as u64;
+                    for (index, (relative, expected)) in paths.into_iter().enumerate() {
+                        if context.is_cancelled() {
+                            break;
+                        }
+                        context.log(format!("Trash: {relative}"));
+                        let result = (|| -> Result<String> {
+                            let path = files::media_path(&folders.gallery, &relative)?;
+                            if cleanup::fingerprint(&path)? != expected {
+                                bail!("File changed after selection; skipped.");
+                            }
+                            gallery::trash_file_checked(&folders, &relative, &context)
+                        })();
+                        match result {
+                            Ok(id) => moved.push(json!({"path":relative,"id":id})),
+                            Err(_) if context.is_cancelled() => break,
+                            Err(error) => {
+                                failed.push(json!({"path":relative,"error":format!("{error:#}")}))
+                            }
+                        }
+                        context.progress((index + 1) as u64, total);
+                    }
+                    engine.invalidate();
+                    Ok(json!({"moved":moved,"failed":failed,"cancelled":context.is_cancelled()}))
+                })?;
+                Ok(json!({"started":true}))
+            }
             ("GET", "/api/gallery" | "/api/gallery/options") => {
                 let items = self.snapshot(&folders, false, text("refresh") == "1")?;
                 if url.path().ends_with("/options") {

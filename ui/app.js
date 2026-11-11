@@ -19,6 +19,7 @@ let trashLoaded = false
 const titles = {
   inputs: ['Inputs e importazione', 'Scegli gli archivi da aggiungere alla tua gallery.'],
   gallery: ['Gallery e date', 'Sfoglia i tuoi ricordi e scegli cosa conservare.'],
+  cleanup: ['Pulizia assistita', 'Rivedi file grandi, scatti ravvicinati e suggerimenti visivi locali.'],
   exports: ['Esportazione ZIP', 'Prepara una copia annuale del tuo archivio.'],
   tasks: ['Attività', 'Segui le operazioni in corso e consulta il risultato.'],
   settings: ['Impostazioni', 'Scegli dove conservare i tuoi archivi.']
@@ -36,6 +37,7 @@ function view(name) {
   $('title').textContent = titles[name][0]
   $('subtitle').textContent = titles[name][1]
   if (name === 'gallery' && state.configured && !state.task.running) run(loadActiveGallery, true)
+  if (name === 'cleanup' && state.configured && !state.task.running && !cleanupLoaded) run(() => loadCleanup(cleanupPage), true)
 }
 async function api(path, body) {
   if (!state.configured && !['/api/state', '/api/settings'].includes(path)) {
@@ -107,6 +109,10 @@ function setBusy() {
   $('browse-next').disabled = browsePage >= browsePages || locked
   $('trash-previous').disabled = trashPage <= 1 || locked
   $('trash-next').disabled = trashPage >= trashPages || locked
+  document.querySelectorAll('[data-cleanup-mode]').forEach(button => { button.disabled = locked })
+  $('cleanup-previous').disabled = cleanupPage <= 1 || locked
+  $('cleanup-next').disabled = cleanupPage >= cleanupPages || locked
+  updateCleanupSelection()
 }
 async function refreshStorage() {
   if (!state.configured) return
@@ -139,12 +145,15 @@ async function refresh() {
   const log = Array.isArray(state.task.log) ? state.task.log.join('\n') : state.task.log
   $('log').textContent = log || 'Nessuna attività.'
   setBusy()
-  if (wasRunning && !state.task.running && state.configured) {
+  if ((wasRunning || cleanupTask) && !state.task.running && state.configured) {
     browseLoaded = false
     galleryOptionsLoaded = false
     trashLoaded = false
+    cleanupLoaded = false
+    if (cleanupTask) await completeCleanupTask()
     await refreshStorage()
     if (currentView === 'gallery') await run(loadActiveGallery, true)
+    if (currentView === 'cleanup' && !cleanupLoaded) await run(() => loadCleanup(cleanupPage), true)
   }
 }
 async function task(action) {
@@ -161,6 +170,7 @@ async function task(action) {
     if (body.password !== body.password_confirmation) throw new Error('Le password di esportazione non coincidono.')
   }
   await api('/api/tasks', body)
+  if (action === 'analyze') { cleanupTask = { kind: 'analyze' }; $('cleanup-return').hidden = false; $('cleanup-task-result').hidden = true }
   if (action === 'import') $('import-password').value = ''
   if (action === 'export') {
     $('export-password').value = ''
@@ -222,6 +232,7 @@ function dateInfo(label, value) {
 }
 async function saveDate(item, date, keepGoogle = false) {
   if (!keepGoogle && !date) throw new Error('Scegli una data valida.')
+  cleanupLoaded = false
   await api(keepGoogle ? '/api/keep' : '/api/correct', keepGoogle ? { path: item.path } : { path: item.path, date })
   browseLoaded = false
   await loadConflicts(page)
@@ -262,6 +273,7 @@ async function loadConflicts(target = 1, refresh = false) {
 }
 async function galleryAction(action, item) {
   await api('/api/gallery/' + action, { path: item.path })
+  cleanupLoaded = false
   trashLoaded = false
   await loadGallery(browsePage)
   await refreshStorage()
@@ -315,6 +327,7 @@ async function loadGallery(target = 1, refresh = false) {
 }
 async function restore(item) {
   await api('/api/gallery/restore', { id: item.id })
+  cleanupLoaded = false
   browseLoaded = false
   await loadTrash(trashPage)
   await refreshStorage()
@@ -398,6 +411,10 @@ function renderFolders() {
 async function saveSettings() {
   if (Object.values(folders).some(path => !path)) throw new Error('Scegli tutte e tre le cartelle.')
   await api('/api/settings', folders)
+  cleanupSelection.clear()
+  cleanupLoaded = false
+  clearPreviews($('cleanup-items'))
+  $('cleanup-result').hidden = true
   browseLoaded = false
   trashLoaded = false
   galleryOptionsLoaded = false
@@ -433,6 +450,170 @@ async function initialize() {
   if (state.configured) { await refreshStorage(); view('inputs') }
   else view('settings')
 }
+const cleanupSelection = new Map()
+let cleanupMode = 'large'
+let cleanupPage = 1
+let cleanupPages = 1
+let cleanupLoaded = false
+let cleanupTask = null
+let cleanupGroups = []
+function updateCleanupSelection() {
+  const count = cleanupSelection.size
+  const size = [...cleanupSelection.values()].reduce((sum, item) => sum + item.size, 0)
+  $('cleanup-selection-count').textContent = count ? `${count} file ${count === 1 ? 'selezionato' : 'selezionati'} · ${bytes(size)}` : 'Nessun file selezionato'
+  $('cleanup-clear').disabled = !count || busy || state.task.running || !state.configured
+  $('cleanup-trash').disabled = !count || count > 500 || busy || state.task.running || !state.configured
+}
+function selectCleanupItem(item, checked) {
+  if (checked && !item.fingerprint) throw new Error('Identità del file non disponibile. Aggiorna i suggerimenti prima di selezionarlo.')
+  if (checked && !cleanupSelection.has(item.path) && cleanupSelection.size >= 500) {
+    throw new Error('Puoi selezionare al massimo 500 file per operazione. Riduci la selezione o completa prima questo gruppo.')
+  }
+  if (checked) cleanupSelection.set(item.path, { path: item.path, fingerprint: item.fingerprint, size: Number(item.size || 0) })
+  else cleanupSelection.delete(item.path)
+  updateCleanupSelection()
+}
+function renderCleanupItem(item) {
+  const card = element('article', 'card gallery-card')
+  const label = element('label', 'cleanup-choice')
+  const checkbox = document.createElement('input')
+  checkbox.type = 'checkbox'
+  checkbox.dataset.operation = ''
+  checkbox.dataset.cleanupPath = item.path
+  checkbox.checked = cleanupSelection.has(item.path)
+  checkbox.setAttribute('aria-label', 'Seleziona ' + item.path)
+  checkbox.addEventListener('change', () => {
+    clearError()
+    try { selectCleanupItem(item, checkbox.checked) } catch (error) { checkbox.checked = false; showError(error) }
+  })
+  label.append(checkbox, element('span', '', 'Seleziona per il cestino'))
+  card.append(mediaPreview(item), element('p', 'path', item.path), element('span', 'muted', bytes(item.size)))
+  if (item.score !== undefined && item.score !== null) {
+    const label = cleanupMode === 'similar' ? 'Distanza dal riferimento' : 'Dettaglio indicativo'
+    card.append(element('p', 'muted', `${label}: ${Number(item.score).toFixed(1)}`))
+  }
+  card.append(label)
+  return card
+}
+function selectCleanupGroup(group) {
+  const additions = group.items.filter(item => !cleanupSelection.has(item.path))
+  if (cleanupSelection.size + additions.length > 500) throw new Error('Il gruppo supera il limite di 500 file selezionati. Seleziona i file singolarmente o svuota la selezione.')
+  for (const item of group.items) selectCleanupItem(item, true)
+  $('cleanup-items').querySelectorAll('input[data-cleanup-path]').forEach(input => { input.checked = cleanupSelection.has(input.dataset.cleanupPath) })
+}
+function renderCleanupGroup(group, index) {
+  const section = element('article', 'cleanup-group')
+  const heading = element('div', 'cleanup-group-heading')
+  const text = document.createElement('div')
+  const labels = { large: 'File grande', bursts: 'Scatti ravvicinati', similar: 'Foto visivamente vicine', quality: 'Dettaglio da verificare' }
+  const reasons = { large: 'Supera la dimensione minima', burst: 'Scatti entro l’intervallo scelto', similar: 'Aspetto simile al riferimento', quality: 'Dettaglio stimato sotto la soglia' }
+  text.append(element('h3', '', `${labels[cleanupMode]} · ${index + 1 + (cleanupPage - 1) * 24}`), element('p', 'muted', `${reasons[group.reason] || 'Suggerimento da verificare'} · ${group.items.length} file · ${bytes(group.size || 0)}`))
+  heading.append(text, actionButton('Seleziona gruppo', async () => selectCleanupGroup(group)))
+  const items = element('div', 'gallery-grid')
+  items.append(...group.items.map(renderCleanupItem))
+  section.append(heading, items)
+  return section
+}
+function renderCleanupSummary(summary) {
+  $('cleanup-summary').replaceChildren()
+  for (const [key, label] of [['eligible', 'Candidati'], ['analyzed', 'Analizzati'], ['pending', 'Da analizzare'], ['unsupported', 'Non supportati'], ['kept_excluded', 'Protetti da Tieni'], ['groups', 'Gruppi']]) {
+    const item = document.createElement('span')
+    item.append(element('strong', '', String(summary[key] || 0)), document.createTextNode(' ' + label))
+    $('cleanup-summary').append(item)
+  }
+}
+async function loadCleanup(target = 1, refresh = false) {
+  if (!state.configured) return
+  const query = new URLSearchParams({
+    mode: cleanupMode, page: target,
+    min_bytes: Number($('cleanup-min-size').value) * 1024 * 1024,
+    gap_seconds: $('cleanup-gap').value,
+    distance: $('cleanup-distance').value,
+    quality_threshold: $('cleanup-quality').value
+  })
+  if (refresh) query.set('refresh', '1')
+  $('cleanup-items').setAttribute('aria-busy', 'true')
+  try {
+    const result = await api('/api/cleanup?' + query)
+    cleanupPage = result.page
+    cleanupPages = result.pages
+    cleanupGroups = result.items
+    cleanupLoaded = true
+    renderCleanupSummary(result.summary)
+    clearPreviews($('cleanup-items'))
+    $('cleanup-items').append(...result.items.map(renderCleanupGroup))
+    if (!result.items.length) {
+      const requiresAnalysis = ['similar', 'quality'].includes(cleanupMode) && result.summary.pending > 0
+      const message = requiresAnalysis ? 'Analizza le foto per completare i suggerimenti. Alcuni file attendono ancora l’analisi locale.' : result.summary.eligible === 0 ? 'Nessun file idoneo da proporre. I file protetti con Tieni restano esclusi.' : 'Nessun suggerimento con questi filtri. Prova una soglia diversa.'
+      $('cleanup-items').append(element('div', 'card empty', message))
+    }
+    $('cleanup-pager').hidden = cleanupPages <= 1
+    $('cleanup-page-label').textContent = `${cleanupPage} / ${cleanupPages}`
+  } finally {
+    $('cleanup-items').setAttribute('aria-busy', 'false')
+    setBusy()
+  }
+}
+function cleanupTab(mode) {
+  cleanupMode = mode
+  cleanupLoaded = false
+  for (const key of ['large', 'bursts', 'similar', 'quality']) $('cleanup-' + key + '-filter').hidden = key !== mode
+  document.querySelectorAll('[data-cleanup-mode]').forEach(button => {
+    const active = button.dataset.cleanupMode === mode
+    button.classList.toggle('active', active)
+    button.setAttribute('aria-selected', String(active))
+  })
+  run(() => loadCleanup(1), true)
+}
+async function cleanupTrash() {
+  if (!cleanupSelection.size) throw new Error('Seleziona almeno un file.')
+  if (cleanupSelection.size > 500) throw new Error('Puoi spostare al massimo 500 file per operazione.')
+  const items = [...cleanupSelection.values()].map(({ path, fingerprint }) => ({ path, fingerprint }))
+  const result = await api('/api/cleanup/trash', { items })
+  if (!result.started) throw new Error('Il task di pulizia non è stato avviato.')
+  cleanupTask = { kind: 'trash' }
+  $('cleanup-return').hidden = false
+  $('cleanup-task-result').hidden = true
+  view('tasks')
+  await refresh()
+}
+function showCleanupOutcome(result) {
+  const moved = result.moved || []
+  const failed = result.failed || []
+  for (const item of moved) cleanupSelection.delete(item.path)
+  for (const id of ['cleanup-result', 'cleanup-task-result']) {
+    const root = $(id)
+    root.replaceChildren()
+    root.hidden = false
+    const card = element('div', 'cleanup-outcome' + (failed.length || result.cancelled ? ' has-failures' : ''))
+    card.append(element('strong', '', `${moved.length} file ${moved.length === 1 ? 'spostato' : 'spostati'} nel cestino${failed.length ? ` · ${failed.length} non ${failed.length === 1 ? 'spostato' : 'spostati'}` : ''}`))
+    if (result.cancelled) card.append(element('p', '', 'Operazione interrotta. I file già spostati restano nel cestino; gli altri rimangono nella gallery.'))
+    if (failed.length) {
+      const list = document.createElement('ul')
+      for (const item of failed) list.append(element('li', '', `${item.path}: ${item.error}`))
+      card.append(list)
+    }
+    card.append(element('p', 'muted', 'I file nel cestino possono essere ripristinati dalla Gallery. Nessuna eliminazione definitiva.'))
+    root.append(card)
+  }
+  updateCleanupSelection()
+}
+async function completeCleanupTask() {
+  const completed = cleanupTask
+  cleanupTask = null
+  if (completed?.kind === 'trash') {
+    if (state.task.result) showCleanupOutcome(state.task.result)
+    else {
+      showError(new Error('Task terminato senza un riepilogo disponibile. Consulta il log e aggiorna i suggerimenti prima di riprovare.'))
+      cleanupSelection.clear()
+    }
+  } else if (completed?.kind === 'analyze') {
+    notify(`Analisi: ${state.task.status}. Torna alla pulizia per controllare i suggerimenti; consulta il log per eventuali file non analizzati.`)
+  }
+  cleanupLoaded = false
+  await loadCleanup(cleanupPage, true)
+}
+
 document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => view(button.dataset.view)))
 document.querySelectorAll('[data-gallery-view]').forEach(button => button.addEventListener('click', () => galleryTab(button.dataset.galleryView)))
 $('refresh').addEventListener('click', () => run(refresh, true))
@@ -452,6 +633,15 @@ $('browse-next').addEventListener('click', () => run(() => loadGallery(browsePag
 $('refresh-trash').addEventListener('click', () => run(() => loadTrash(trashPage), true))
 $('trash-previous').addEventListener('click', () => run(() => loadTrash(trashPage - 1), true))
 $('trash-next').addEventListener('click', () => run(() => loadTrash(trashPage + 1), true))
+document.querySelectorAll('[data-cleanup-mode]').forEach(button => button.addEventListener('click', () => cleanupTab(button.dataset.cleanupMode)))
+$('cleanup-analyze').addEventListener('click', () => run(() => task('analyze'), true))
+$('cleanup-refresh').addEventListener('click', () => run(() => loadCleanup(cleanupPage, true), true))
+$('cleanup-previous').addEventListener('click', () => run(() => loadCleanup(cleanupPage - 1), true))
+$('cleanup-next').addEventListener('click', () => run(() => loadCleanup(cleanupPage + 1), true))
+for (const id of ['cleanup-min-size', 'cleanup-gap', 'cleanup-distance', 'cleanup-quality']) $(id).addEventListener('change', () => run(() => loadCleanup(1), true))
+$('cleanup-clear').addEventListener('click', () => run(async () => { cleanupSelection.clear(); $('cleanup-items').querySelectorAll('input[data-cleanup-path]').forEach(input => { input.checked = false }); updateCleanupSelection() }, true))
+$('cleanup-trash').addEventListener('click', () => run(cleanupTrash, true))
+$('cleanup-return').addEventListener('click', () => view('cleanup'))
 run(initialize, true)
 setInterval(async () => {
   if (polling || busy) return

@@ -440,3 +440,22 @@ progress {
 #cancel-task {
   margin-left:0}
 }
+
+/* Cleanup suggestions remain opt-in: selection is always explicit. */
+@media(min-width:801px){.shell{grid-template-columns:245px 1fr}nav button{font-size:14px}}
+.cleanup-summary{display:flex;flex-wrap:wrap;gap:10px 20px;margin-top:20px;font-size:12px;color:#687467}
+.cleanup-summary strong{color:#23332b}
+#cleanup label{display:flex;align-items:center;gap:10px;font-size:13px}
+.cleanup-selection{display:flex;align-items:center;justify-content:space-between;gap:20px;position:sticky;top:10px;z-index:2;box-shadow:0 4px 16px #243b2212}
+.cleanup-selection p{font-size:11px;margin-bottom:0;max-width:430px}
+.cleanup-group{margin-bottom:25px}
+.cleanup-group-heading{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:15px}
+.cleanup-group-heading h3{font-size:16px;margin:0 0 6px}
+.cleanup-group-heading p{margin:0;font-size:12px}
+.cleanup-choice{display:flex;align-items:center;gap:9px;font-size:13px;margin-top:12px;min-height:32px}
+.cleanup-choice input{flex-shrink:0}
+.cleanup-outcome{border:1px solid #c8d9b6;border-radius:12px;padding:20px;background:#f0f5e9;margin-bottom:20px}
+.cleanup-outcome ul{padding-left:20px;font-size:12px;overflow-wrap:anywhere;max-height:250px;overflow:auto}
+.cleanup-outcome.has-failures{background:#fff5e8;border-color:#e6ceaa}
+#cleanup-return{margin-bottom:15px}
+@media(max-width:800px){.cleanup-selection{position:static;align-items:flex-start;flex-direction:column}.cleanup-group-heading{align-items:flex-start}.cleanup-group-heading button{font-size:12px}.cleanup-selection .row{width:100%}}
