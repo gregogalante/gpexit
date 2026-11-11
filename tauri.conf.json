@@ -1,7 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "GPExit",
-  "version": "0.1.0",
   "identifier": "it.gpexit.desktop",
   "build": { "frontendDist": "ui" },
   "app": {
@@ -12,5 +11,19 @@
       "assetProtocol": { "enable": true, "scope": [] }
     }
   },
-  "bundle": { "active": true, "targets": ["app"], "category": "Photography", "shortDescription": "Local Google Photos archive manager" }
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Photography",
+    "publisher": "GPExit contributors",
+    "shortDescription": "Local photo gallery and archive manager",
+    "longDescription": "Manage photo archives locally: import Google Photos Takeout ZIP files, review capture dates, clean up similar photos, and create encrypted annual backups.",
+    "icon": ["icons/icon.png", "icons/icon.icns", "icons/icon.ico"],
+    "macOS": { "minimumSystemVersion": "11.0", "signingIdentity": "-", "infoPlist": "platform/macos/Info.plist" },
+    "windows": {
+      "bundleVCRuntime": true,
+      "webviewInstallMode": { "type": "embedBootstrapper" },
+      "nsis": { "displayLanguageSelector": true, "languages": ["English", "Italian"] }
+    }
+  }
 }

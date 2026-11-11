@@ -21,3 +21,4 @@ trash/
 # Rust desktop build artifacts
 /target/
 /gen/
+/dist/

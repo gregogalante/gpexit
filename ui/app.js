@@ -27,13 +27,19 @@ const titles = {
 function showError(error) {
   $('error').textContent = error?.message || String(error)
   $('error').hidden = false
+  $('error-box').hidden = false
 }
-function clearError() { $('error').hidden = true }
+function clearError() { $('error').hidden = true; $('error-box').hidden = true }
 function view(name) {
   if (!state.configured && name !== 'settings') name = 'settings'
   currentView = name
   for (const key of Object.keys(titles)) $(key).hidden = key !== name
-  document.querySelectorAll('[data-view]').forEach(button => button.classList.toggle('active', button.dataset.view === name))
+  document.querySelectorAll('[data-view]').forEach(button => {
+    const active = button.dataset.view === name
+    button.classList.toggle('active', active)
+    if (active) button.setAttribute('aria-current', 'page')
+    else button.removeAttribute('aria-current')
+  })
   $('title').textContent = titles[name][0]
   $('subtitle').textContent = titles[name][1]
   if (name === 'gallery' && state.configured && !state.task.running) run(loadActiveGallery, true)
@@ -61,14 +67,65 @@ function bytes(value) {
 function element(tag, className, text) {
   const node = document.createElement(tag)
   if (className) node.className = className
-  if (text !== undefined) node.textContent = text
+  if (text !== undefined) {
+    node.textContent = text
+    if (className?.split(' ').includes('path') || className === 'file-name') node.title = text
+  }
   return node
 }
 function actionButton(label, operation, className = '') {
   const button = element('button', className, label)
   button.dataset.mutation = ''
+  if (label.includes('cestino')) button.title = 'Il file resta sul disco e può essere ripristinato dalla Gallery.'
   button.addEventListener('click', () => run(operation, true))
   return button
+}
+function emptyState(title, description) {
+  const root = element('div', 'empty')
+  root.append(element('strong', '', title), element('p', '', description))
+  return root
+}
+async function withLoading(id, operation) {
+  const root = $(id)
+  root.setAttribute('aria-busy', 'true')
+  root.classList.toggle('is-loading', true)
+  const hadContent = root.children.length > 0
+  if (!hadContent) root.append(emptyState('Caricamento…', 'Preparazione dei file da visualizzare.'))
+  try { return await operation() } catch (error) {
+    const countId = { 'gallery-items': 'browse-count', conflicts: 'conflict-count' }[id]
+    if (countId) $(countId).textContent = 'Caricamento non riuscito. Aggiorna per riprovare.'
+    if (!hadContent) root.replaceChildren(emptyState('Caricamento non riuscito', 'Controlla il messaggio di errore e aggiorna la vista per riprovare.'))
+    throw error
+  } finally {
+    root.setAttribute('aria-busy', 'false')
+    root.classList.toggle('is-loading', false)
+  }
+}
+function updateInputSelection() {
+  const selected = $('input-list').querySelectorAll('input:checked').length
+  const total = (state.inputs || []).length
+  $('input-summary').textContent = total ? `${selected} di ${total} ZIP selezionati` : 'Aggiungi i tuoi archivi per iniziare.'
+  const locked = busy || state.task.running || !state.configured
+  $('select-inputs').disabled = locked || !total || selected === total
+  $('clear-inputs').disabled = locked || !selected
+  $('import').disabled = locked || !selected
+}
+function selectInputs(checked) {
+  if (busy || state.task.running || !state.configured) return
+  $('input-list').querySelectorAll('input').forEach(input => { input.checked = checked })
+  updateInputSelection()
+}
+function enableTabKeyboard(selector) {
+  const tabs = [...document.querySelectorAll(selector)]
+  tabs.forEach((tab, index) => tab.addEventListener('keydown', event => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+    const direction = event.key === 'ArrowLeft' ? -1 : 1
+    let target = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + direction + tabs.length) % tabs.length
+    if (tabs[target].disabled) return
+    event.preventDefault()
+    tabs[target].focus()
+    tabs[target].click()
+  }))
 }
 function renderFiles(id, files, selectable) {
   const root = $(id)
@@ -77,7 +134,10 @@ function renderFiles(id, files, selectable) {
   root.dataset.signature = signature
   const selected = new Set([...root.querySelectorAll('input:checked')].map(input => input.value))
   root.replaceChildren()
-  if (!files.length) root.append(element('div', 'empty', 'Nessun archivio disponibile.'))
+  if (!files.length) root.append(emptyState(
+    selectable ? 'Nessuno ZIP da importare' : 'Nessuna esportazione disponibile',
+    selectable ? 'Aggiungi gli ZIP nella cartella Inputs, poi aggiorna l’elenco.' : 'Crea gli archivi annuali per ritrovarli qui.'
+  ))
   for (const file of files) {
     const row = element('label', 'file')
     if (selectable) {
@@ -86,6 +146,8 @@ function renderFiles(id, files, selectable) {
       checkbox.value = file.name
       checkbox.checked = selected.has(file.name)
       checkbox.disabled = state.task.running || busy
+      checkbox.setAttribute('aria-label', 'Importa ' + file.name)
+      checkbox.addEventListener('change', updateInputSelection)
       row.append(checkbox)
     }
     row.append(element('span', 'file-name', file.name), element('span', 'size', bytes(file.size)))
@@ -113,6 +175,7 @@ function setBusy() {
   $('cleanup-previous').disabled = cleanupPage <= 1 || locked
   $('cleanup-next').disabled = cleanupPage >= cleanupPages || locked
   updateCleanupSelection()
+  updateInputSelection()
 }
 async function refreshStorage() {
   if (!state.configured) return
@@ -132,8 +195,11 @@ async function refreshStorage() {
 async function refresh() {
   const wasRunning = state.task.running
   state = await api('/api/state')
-  $('status').textContent = state.task.running ? '● Operazione in corso' : (state.task.status || 'Pronto')
+  $('status').textContent = state.task.running ? 'Operazione in corso' : (state.task.status || 'Pronto')
+  $('status').dataset.running = String(state.task.running)
+  $('status').dataset.error = String(state.task.status === 'Fallito')
   $('gallery-path').textContent = state.folders?.gallery || state.gallery || 'Non configurata'
+  $('gallery-path').title = $('gallery-path').textContent
   $('storage-overview').hidden = !state.configured
   if (!state.configured) {
     view('settings')
@@ -143,7 +209,8 @@ async function refresh() {
   }
   renderProgress()
   const log = Array.isArray(state.task.log) ? state.task.log.join('\n') : state.task.log
-  $('log').textContent = log || 'Nessuna attività.'
+  const logText = log || 'Il dettaglio comparirà qui quando avvierai un’operazione.'
+  if ($('log').textContent !== logText) $('log').textContent = logText
   setBusy()
   if ((wasRunning || cleanupTask) && !state.task.running && state.configured) {
     browseLoaded = false
@@ -170,7 +237,10 @@ async function task(action) {
     if (body.password !== body.password_confirmation) throw new Error('Le password di esportazione non coincidono.')
   }
   await api('/api/tasks', body)
-  if (action === 'analyze') { cleanupTask = { kind: 'analyze' }; $('cleanup-return').hidden = false; $('cleanup-task-result').hidden = true }
+  cleanupTask = action === 'analyze' ? { kind: 'analyze' } : null
+  $('cleanup-return').hidden = action !== 'analyze'
+  $('cleanup-task-result').hidden = true
+  $('cleanup-task-result').replaceChildren()
   if (action === 'import') $('import-password').value = ''
   if (action === 'export') {
     $('export-password').value = ''
@@ -213,6 +283,7 @@ function mediaPreview(item) {
   if (video) { media.controls = true; media.preload = 'metadata' } else { media.alt = item.path; media.loading = 'lazy' }
   media.dataset.path = item.path
   media.addEventListener('error', () => previewError(media))
+  media.addEventListener(video ? 'loadedmetadata' : 'load', () => { preview.dataset.loaded = 'true' })
   preview.append(media)
   lazyMedia.observe(media)
   return preview
@@ -260,16 +331,18 @@ function renderConflict(item) {
   return card
 }
 async function loadConflicts(target = 1, refresh = false) {
-  $('conflict-count').textContent = 'Scansione in corso…'
-  const result = await api('/api/conflicts?page=' + target + (refresh ? '&refresh=1' : ''))
-  page = result.page
-  pages = result.pages
-  $('conflict-count').textContent = `${result.total} file da verificare`
-  clearPreviews($('conflicts'))
-  $('conflicts').append(...result.items.map(renderConflict))
-  if (!result.items.length) $('conflicts').append(element('div', 'card empty', 'Nessuna discrepanza da verificare.'))
-  $('pager').hidden = pages <= 1
-  $('page-label').textContent = `${page} / ${pages}`
+  return withLoading('conflicts', async () => {
+    $('conflict-count').textContent = 'Scansione in corso…'
+    const result = await api('/api/conflicts?page=' + target + (refresh ? '&refresh=1' : ''))
+    page = result.page
+    pages = result.pages
+    $('conflict-count').textContent = `${result.total} file da verificare`
+    clearPreviews($('conflicts'))
+    $('conflicts').append(...result.items.map(renderConflict))
+    if (!result.items.length) $('conflicts').append(emptyState('Nessuna discrepanza rilevata', 'Nessuna discrepanza da verificare tra i nomi riconosciuti e le date Google disponibili.'))
+    $('pager').hidden = pages <= 1
+    $('page-label').textContent = `${page} / ${pages}`
+  })
 }
 async function galleryAction(action, item) {
   await api('/api/gallery/' + action, { path: item.path })
@@ -307,23 +380,25 @@ async function loadGalleryOptions() {
   galleryOptionsLoaded = true
 }
 async function loadGallery(target = 1, refresh = false) {
-  $('browse-count').textContent = 'Caricamento gallery…'
-  if (refresh) {
-    await api('/api/gallery?page=1&refresh=1')
-    galleryOptionsLoaded = false
-  }
-  if (!galleryOptionsLoaded) await loadGalleryOptions()
-  const query = new URLSearchParams({ page: target, review: $('review-filter').value, year: $('year-filter').value, month: $('month-filter').value })
-  const result = await api('/api/gallery?' + query)
-  browsePage = result.page
-  browsePages = result.pages
-  browseLoaded = true
-  $('browse-count').textContent = `${result.total} file · ${$('review-filter').value === 'pending' ? 'Da rivedere' : 'Tutta la gallery'}`
-  clearPreviews($('gallery-items'))
-  $('gallery-items').append(...result.items.map(renderGalleryItem))
-  if (!result.items.length) $('gallery-items').append(element('div', 'card empty', 'Nessun file in questa vista.'))
-  $('browse-pager').hidden = browsePages <= 1
-  $('browse-page-label').textContent = `${browsePage} / ${browsePages}`
+  return withLoading('gallery-items', async () => {
+    $('browse-count').textContent = 'Caricamento gallery…'
+    if (refresh) {
+      await api('/api/gallery?page=1&refresh=1')
+      galleryOptionsLoaded = false
+    }
+    if (!galleryOptionsLoaded) await loadGalleryOptions()
+    const query = new URLSearchParams({ page: target, review: $('review-filter').value, year: $('year-filter').value, month: $('month-filter').value })
+    const result = await api('/api/gallery?' + query)
+    browsePage = result.page
+    browsePages = result.pages
+    browseLoaded = true
+    $('browse-count').textContent = `${result.total} file · ${$('review-filter').value === 'pending' ? 'Da rivedere' : 'Tutta la gallery'}`
+    clearPreviews($('gallery-items'))
+    $('gallery-items').append(...result.items.map(renderGalleryItem))
+    if (!result.items.length) $('gallery-items').append(emptyState('Nessun file in questa vista', $('review-filter').value === 'pending' ? 'Hai rivisto tutti i file visibili. Scegli Tutti i file o cambia anno e mese per continuare.' : 'Prova a cambiare i filtri o importa nuovi ZIP nella gallery.'))
+    $('browse-pager').hidden = browsePages <= 1
+    $('browse-page-label').textContent = `${browsePage} / ${browsePages}`
+  })
 }
 async function restore(item) {
   await api('/api/gallery/restore', { id: item.id })
@@ -333,20 +408,22 @@ async function restore(item) {
   await refreshStorage()
 }
 async function loadTrash(target = 1) {
-  const result = await api('/api/trash?page=' + target)
-  trashPage = result.page
-  trashPages = result.pages
-  trashLoaded = true
-  $('trash-count').textContent = `${result.total} file nel cestino. Restano sul disco e possono essere ripristinati.`
-  $('trash-items').replaceChildren()
-  for (const item of result.items) {
-    const row = element('div', 'file trash-row')
-    row.append(element('span', 'file-name path', item.path), element('span', 'size', bytes(item.size)), actionButton('Ripristina', () => restore(item)))
-    $('trash-items').append(row)
-  }
-  if (!result.items.length) $('trash-items').append(element('div', 'empty', 'Cestino vuoto.'))
-  $('trash-pager').hidden = trashPages <= 1
-  $('trash-page-label').textContent = `${trashPage} / ${trashPages}`
+  return withLoading('trash-items', async () => {
+    const result = await api('/api/trash?page=' + target)
+    trashPage = result.page
+    trashPages = result.pages
+    trashLoaded = true
+    $('trash-count').textContent = `${result.total} file nel cestino. Restano sul disco e possono essere ripristinati.`
+    $('trash-items').replaceChildren()
+    for (const item of result.items) {
+      const row = element('div', 'file trash-row')
+      row.append(element('span', 'file-name path', item.path), element('span', 'size', bytes(item.size)), actionButton('Ripristina', () => restore(item)))
+      $('trash-items').append(row)
+    }
+    if (!result.items.length) $('trash-items').append(emptyState('Cestino vuoto', 'I file spostati qui resteranno sul disco e potranno essere ripristinati.'))
+    $('trash-pager').hidden = trashPages <= 1
+    $('trash-page-label').textContent = `${trashPage} / ${trashPages}`
+  })
 }
 async function loadActiveGallery() {
   if (galleryView === 'browse' && !browseLoaded) await loadGallery()
@@ -359,6 +436,7 @@ function galleryTab(name) {
     const active = button.dataset.galleryView === name
     button.classList.toggle('active', active)
     button.setAttribute('aria-selected', String(active))
+    button.tabIndex = active ? 0 : -1
   })
   if (state.configured && !state.task.running) run(loadActiveGallery, true)
 }
@@ -383,7 +461,8 @@ function renderProgress() {
     $('progress-label').textContent = task.running ? (task.cancel_requested ? 'Annullamento richiesto…' : 'Operazione in corso…') : 'Nessuna attività in corso.'
     if (!task.running) { $('task-progress').max = 1; $('task-progress').value = 0 }
   }
-  $('cancel-task').textContent = task.cancel_requested ? 'Annullamento richiesto' : 'Annulla attività'
+  $('cancel-task').textContent = task.cancel_requested ? 'Interruzione richiesta' : 'Interrompi attività'
+  $('task-status').textContent = task.running ? (task.cancel_requested ? 'Interruzione in corso…' : 'Operazione in corso') : (task.status === 'Pronto' || !task.status ? 'Nessuna attività in corso' : task.status)
 }
 function renderFolders() {
   $('folder-choices').replaceChildren()
@@ -405,7 +484,8 @@ function renderFolders() {
     $('folder-choices').append(choice)
   }
   $('settings-heading').textContent = state.configured ? 'Cartelle del tuo archivio' : 'Prima di iniziare, scegli tre cartelle'
-  $('settings-summary').textContent = state.configured ? 'Le modifiche saranno applicate dopo il salvataggio.' : 'Seleziona tutte e tre le cartelle per iniziare.'
+  const changed = state.configured && Object.keys(folders).some(key => folders[key] !== state.folders?.[key])
+  $('settings-summary').textContent = state.configured ? (changed ? 'Modifiche non salvate. Salva per applicare i nuovi percorsi.' : 'Cartelle salvate. Saranno riaperte al prossimo avvio.') : 'Scegli tutte e tre le cartelle per iniziare.'
   setBusy()
 }
 async function saveSettings() {
@@ -430,6 +510,7 @@ async function saveSettings() {
 function notify(message) {
   $('notice').textContent = message
   $('notice').hidden = false
+  $('notice-box').hidden = false
 }
 async function saveReport() {
   const result = await native.invoke('save_report')
@@ -557,11 +638,13 @@ async function loadCleanup(target = 1, refresh = false) {
 function cleanupTab(mode) {
   cleanupMode = mode
   cleanupLoaded = false
+  $('cleanup-items').setAttribute('aria-labelledby', 'cleanup-tab-' + mode)
   for (const key of ['large', 'bursts', 'similar', 'quality']) $('cleanup-' + key + '-filter').hidden = key !== mode
   document.querySelectorAll('[data-cleanup-mode]').forEach(button => {
     const active = button.dataset.cleanupMode === mode
     button.classList.toggle('active', active)
     button.setAttribute('aria-selected', String(active))
+    button.tabIndex = active ? 0 : -1
   })
   run(() => loadCleanup(1), true)
 }
@@ -616,6 +699,12 @@ async function completeCleanupTask() {
 
 document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => view(button.dataset.view)))
 document.querySelectorAll('[data-gallery-view]').forEach(button => button.addEventListener('click', () => galleryTab(button.dataset.galleryView)))
+$('dismiss-error').addEventListener('click', clearError)
+$('dismiss-notice').addEventListener('click', () => { $('notice-box').hidden = true; $('notice').hidden = true })
+$('select-inputs').addEventListener('click', () => selectInputs(true))
+$('clear-inputs').addEventListener('click', () => selectInputs(false))
+enableTabKeyboard('[data-gallery-view]')
+enableTabKeyboard('[data-cleanup-mode]')
 $('refresh').addEventListener('click', () => run(refresh, true))
 $('save-settings').addEventListener('click', () => run(saveSettings, true))
 $('save-report').addEventListener('click', () => run(saveReport, true))

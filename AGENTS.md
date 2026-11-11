@@ -29,11 +29,13 @@ Trash lives in gallery/.gpexit-trash. Exclude it from normal traversal and expor
 
 Use Rust 1.91 or newer and the checked-in Cargo.lock. Standard commands:
 
-- `cargo test --locked`
+- `cargo test --locked --all-targets`
 - `cargo clippy --all-targets --locked -- -D warnings`
 - `cargo fmt -- --check`
-- `cargo test --no-default-features --locked` for the headless engine.
+- `cargo test --no-default-features --locked --all-targets` for the headless engine.
 - `cargo run --locked` to launch the native application.
 - `scripts/bundle-macos.sh` to build the local macOS app.
 
 Use isolated GPEXIT_CONFIG_DIR and GPEXIT_CACHE_DIR directories for native UI tests. Use temporary media and stop owned app/test processes after validation. Do not modify the real gallery to test features. Keep target/ and gen/ ignored.
+
+Packaging uses Tauri CLI 2.12.4. Cargo.toml is the single version source. Platform bundle configuration is in tauri.conf.json and platform/. The release workflow packages both macOS architectures, Windows x64, and Linux x64; version tags create drafts only. See docs/releasing.md for build and signing setup. examples/release_artifacts.rs validates, names, and hashes installer outputs.

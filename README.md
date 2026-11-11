@@ -1,50 +1,60 @@
-# GPExit desktop
+# GPExit
 
-GPExit is a standalone Rust/Tauri application. The archive engine, database operations, date parsing, image previews, filesystem operations, and task management run in Rust. The interface is bundled HTML/CSS/JavaScript in the operating system WebView. No separate runtime, browser tab, or HTTP server is required.
+GPExit is a desktop app for taking control of your Google Photos archive. Import Takeout ZIP files, browse your photos, correct capture dates, review cleanup suggestions, and create encrypted annual backups. All processing happens locally on your computer.
 
-## Run
+## Get started
 
-Open `GPExit.app` on macOS. On first launch, use the native folder pickers to select three existing directories:
+Install the package for your system from [Releases](https://github.com/gregogalante/gpexit/releases):
 
-- **Inputs:** Original Takeout ZIP files, including encrypted ZIP files.
-- **Gallery:** Extracted photos, videos, JSON metadata, and local review databases.
-- **Exports:** Generated annual ZIP files.
+| System | Package |
+| --- | --- |
+| macOS, Apple Silicon | `macos-arm64.dmg` |
+| macOS, Intel | `macos-x64.dmg` |
+| Windows, x64 | `windows-x64-setup.exe` or `windows-x64.msi` |
+| Linux, x64 | `linux-x64.AppImage` or `linux-x64.deb` |
 
-The directories must be distinct and cannot contain one another. Selection does not move existing files. Paths are saved under the operating system application configuration directory and restored on subsequent launches. Missing or unavailable paths can be replaced in Settings. Passwords are not saved in configuration or logs.
+On first launch, select three existing folders using the native folder pickers:
 
-The native gallery lock prevents two desktop instances from modifying the same gallery. Do not run other archive tools against the gallery concurrently.
+- **Inputs:** Your Google Photos Takeout ZIP files.
+- **Gallery:** Your organized photos, videos, metadata, and review state.
+- **Exports:** Your generated annual ZIP backups.
 
-## Features
+Folders must be distinct and cannot contain one another. Selecting a folder does not move its contents. GPExit remembers the paths after restarting; change them in Settings when needed. Passwords are never saved in settings or logs.
 
-- Select input ZIP files and import with one to four streaming workers. AES and traditional ZipCrypto inputs are supported. Files are deduplicated by SHA-256, associated with Google JSON across selected ZIPs, organized by year/month/type, and checkpointed for resume.
-- Review all or pending media, filter by year and month, mark files to keep, move media and JSON to recoverable trash, and restore without overwriting existing files.
-- Compare filename, Google, and original EXIF dates. Correct the date, move media and JSON together, update `photoTakenTime`, preserve its first original value in `gpexitOriginalPhotoTakenTime`, and record `gpexitDate` for portable corrections. Export a CSV using the native save dialog.
-- Export annual ZIP64 archives, optionally protected with AES-256. Two matching password fields are required for encrypted export. Original input ZIP files remain unchanged.
-- View directory sizes, file counts, free space on the gallery volume, task progress, and the latest 500 log lines. Logs are held in memory for the current application session.
-- Cancel a running task. Closing the application requests cancellation and waits for task cleanup. Completed imported files remain available for resume; an incomplete annual export does not replace the previous ZIP.
+## Import and organize
 
-Image thumbnails are generated lazily and cached outside the gallery. JPEG decoding is downsampled before resizing; preview generation is serialized to limit memory. Cached previews are limited to approximately 512 MiB and pruned by age. JPEG, PNG, GIF, WebP, TIFF, and BMP previews are supported. Other media can still be archived and reviewed by metadata when no decoder is available. Video playback depends on the platform WebView's codec support, as in the web version.
+Select input ZIP files, enter a password when required, and start importing. GPExit supports AES and traditional ZipCrypto archives, associates Google JSON metadata across selected ZIP files, and organizes media by year, month, and type. SHA-256 deduplication avoids storing identical media twice. Streaming extraction uses one to four workers and checkpoints completed work for resume.
 
-Dates use this priority: manual decisions, Google `photoTakenTime`, filename date, then supported original EXIF date when appropriate. Annual archive paths provide a fallback. Google timestamps use UTC; changing a calendar date retains the existing UTC clock or uses midnight when no valid clock exists.
+The sidebar provides access to inputs, gallery, date review, assisted cleanup, exports, settings, and activity. Folder statistics show logical file sizes, file counts, and available gallery-volume space. Activity shows progress and the latest 500 log lines for the current session. Tasks can be cancelled; closing GPExit requests cancellation and waits for cleanup.
+
+## Browse and correct dates
+
+Filter the gallery by year, month, and review status. Inspect a photo, mark it to keep, or move it with its metadata to recoverable trash. Restore files from Trash without overwriting existing files.
+
+Date review compares filename timestamps, Google metadata, and supported original EXIF dates. Manual corrections move the media and JSON together, update `photoTakenTime`, preserve its first original value in `gpexitOriginalPhotoTakenTime`, and record `gpexitDate`. These corrections remain portable without the SQLite database. Export the review as CSV through the native save dialog.
+
+Manual decisions take priority over inferred dates. Google timestamps use UTC; choosing a new calendar date preserves the existing UTC clock, or uses midnight when no valid clock exists.
+
+JPEG, PNG, GIF, WebP, TIFF, and BMP have cached image previews. Other formats remain available for archive operations and metadata review. Video playback depends on system WebView codecs. Thumbnails are generated on demand with bounded decoding and an approximately 512 MiB cache outside the gallery.
 
 ## Assisted cleanup
 
-Open **Pulizia assistita** to review four types of suggestions:
+GPExit offers four local review tools:
 
-- **File grandi:** Photos and videos above the selected logical file size, largest first. This view is available immediately.
-- **Scatti ravvicinati:** Photos with nearby capture times. The chosen maximum gap is applied within groups of at most 12 files and a 60-second span. Filename, Google UTC, and EXIF-local clocks are kept separate. Portable manual date corrections take priority over filename calendar dates.
-- **Foto simili:** Approximate visual similarity from a 64-bit difference hash, compared against each group's reference image. Adjust the distance threshold to widen or narrow suggestions.
-- **Dettaglio basso:** Low estimated thumbnail sharpness, measured with Laplacian variance. Adjust the threshold to review more or fewer candidates.
+- **Large files:** Photos and videos above a chosen size, largest first.
+- **Nearby shots:** Photos captured close together, grouped with bounded time spans.
+- **Similar photos:** Approximate visual matches using a difference hash.
+- **Low detail:** Photos with low estimated thumbnail sharpness.
 
-Click **Analizza le foto** for the visual views, follow progress in Activity, then return to cleanup. Analysis uses existing native image decoders; no models are downloaded and no photos leave the computer. Results, including unsupported decoder failures, are cached in `gallery/.gpexit-cleanup.sqlite3` by path, size, modification time, and algorithm version. Changed files need new analysis; unchanged files reuse previous results after restarting. This cache is derived data and can be rebuilt.
+Run photo analysis to populate visual suggestions. No models are downloaded and no photos are uploaded. Analysis results are cached incrementally; unchanged photos reuse their results after restarting.
 
-No file is preselected. Select individual files or explicitly select a group, review the selected count and logical byte total, then move up to 500 files to the recoverable trash. The move runs as a cancellable task, including hashing large videos, and reports moved, failed, and interrupted work. Completed moves remain recoverable in Gallery's Trash tab. Files marked **Tieni** are excluded and protected on the backend. A stale or invalid selection is rejected before any file is moved; files changing during processing are skipped. No permanent deletion is offered.
+Suggestions need human review: similar photos may contain different moments, and low detail does not prove blur. No files are preselected. Explicitly select files or groups and review the count and size before moving them to recoverable trash. Files marked to keep are protected. Bulk operations support cancellation and reject stale selections. GPExit does not permanently delete media.
 
-Suggestions require human review. Visual hashes do not establish that two photos have identical content. The search bounds candidate buckets and group sizes to avoid quadratic comparisons, so it can miss matches; near-uniform/low-texture hashes are excluded from similarity groups. Low thumbnail sharpness is not proof of blur: smooth backgrounds, illustrations, noise, and resolution affect scores. Burst timing does not establish that scenes are the same. This edition does not perform face identification or semantic categorization.
+## Export and back up
 
-## Data and portability
+Create annual ZIP64 archives, optionally encrypted with AES-256. Encrypted export requires entering the password twice. Input archives remain untouched. Interrupted exports do not replace previously completed archives.
 
-The desktop application uses these gallery files:
+Back up the **entire gallery, including hidden files**, to preserve review state and recoverable removals:
 
 ```text
 gallery/
@@ -52,55 +62,47 @@ gallery/
   YYYY/MM/videos/...
   .gpexit-dates.sqlite3
   .gpexit-progress.sqlite3
-  .gpexit-desktop.lock
-  .gpexit-trash/<entry-id>/...
+  .gpexit-cleanup.sqlite3
+  .gpexit-trash/...
 ```
 
-Trash is internal to the selected gallery so all three chosen directories can be on independent volumes. It is excluded from browsing and new annual exports. Its records prevent reimporting the same content until restored. Back up the entire gallery, including hidden files, to retain review state and recoverable removals. Previously generated ZIP files retain their old contents until regenerated.
+Trash is excluded from browsing and new exports. Existing exported ZIP files retain their previous contents until regenerated. Photo/JSON pairs carry date corrections independently of SQLite; annual exports also include the manual-date manifest. Cleanup analysis is derived data and can be rebuilt.
 
-Photo/JSON pairs remain portable without SQLite. Annual ZIPs include the manual-date manifest. Checkpoints use a content fingerprint and validate existing gallery files before resuming. Archives and date/keep databases created by earlier GPExit editions remain readable. A legacy sibling `trash` directory is separate from `.gpexit-trash` and is not relocated automatically.
+GPExit locks the selected gallery to prevent concurrent app instances from modifying it. Avoid modifying gallery contents with another archive tool while a task is running.
 
-The app configuration file on macOS is `~/Library/Application Support/it.gpexit.desktop/folders.json`. Thumbnail cache is under `~/Library/Caches/it.gpexit.desktop/previews`. `GPEXIT_CONFIG_DIR` and `GPEXIT_CACHE_DIR` can override these base directories for isolated testing.
+## Build and develop
 
-## Build
-
-Rust 1.91 or newer and the platform Tauri prerequisites are required. On macOS, install Xcode command line tools. Frontend assets are checked in; no npm installation or frontend build is needed.
+Requires Rust 1.91 or newer and [Tauri platform prerequisites](https://v2.tauri.app/start/prerequisites/). The interface is bundled with the app; no Node installation, frontend build, HTTP server, or separate runtime is needed.
 
 ```sh
 cargo run --locked
 ```
 
-Build the local macOS application:
+For a local macOS app:
 
 ```sh
+cargo install tauri-cli --version 2.12.4 --locked
 scripts/bundle-macos.sh
 ```
 
-The result is `target/release/bundle/macos/GPExit.app`. The script builds for the host architecture and applies an ad-hoc local signature. It does not install the app or notarize it for distribution. The verified build is macOS Apple Silicon. Windows and Linux require their normal Tauri platform dependencies and have not been verified on those operating systems.
+Output: `target/release/bundle/macos/GPExit.app`. Other platform packages and release signing are covered in [Release builds](docs/releasing.md).
 
-## Verify
+Run verification:
 
 ```sh
-cargo test --locked
+cargo test --locked --all-targets
 cargo clippy --all-targets --locked -- -D warnings
 cargo fmt -- --check
 ```
 
-The engine can also be tested without the desktop WebView:
+The engine can also be tested without the native WebView:
 
 ```sh
-cargo test --no-default-features --locked
+cargo test --no-default-features --locked --all-targets
 ```
 
-Integration tests use temporary synthetic archives and cover AES/ZipCrypto, deduplication, metadata association, resume, collision handling, portable date changes, trash/restore, configuration persistence, exclusive locks, IPC routing, filters, cache invalidation, native previews, and task cancellation. The `archive_probe` and `performance_probe` examples provide headless interoperability and timing harnesses for development; they are not needed by the application.
+Integration tests use temporary synthetic archives and cover encryption, deduplication, metadata association, resume, date corrections, trash and restore, persistence, locks, previews, cleanup, IPC, and cancellation. Development probes in `examples/` support interoperability and performance checks.
 
-## Architecture
+On macOS, settings are stored in `~/Library/Application Support/it.gpexit.desktop/folders.json`; previews are under `~/Library/Caches/it.gpexit.desktop/previews`. `GPEXIT_CONFIG_DIR` and `GPEXIT_CACHE_DIR` override these locations for isolated tests. Other systems use their platform application directories.
 
-- `config.rs`: Three-directory configuration and atomic persistence.
-- `archive.rs`: Streaming input verification, bounded extraction workers, deduplication, metadata association, checkpoints, and annual ZIP export.
-- `dates.rs`, `files.rs`, `gallery.rs`: Source dates, file safety, review decisions, corrections, trash, and statistics.
-- `task.rs`: Serialized task lifecycle, logs, progress, and cancellation.
-- `service.rs`: Desktop operations and cached gallery snapshots.
-- `preview.rs`: Bounded image conversion and thumbnail cache.
-- `main.rs`: Native window, folder/save dialogs, IPC, asset scopes, and shutdown.
-- `ui/`: Local interface assets.
+See [AGENTS.md](AGENTS.md) for source structure and development conventions.
