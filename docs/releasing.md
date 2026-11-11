@@ -11,7 +11,7 @@ The test workflow checks the headless engine on macOS, Windows, and Linux, and b
 | Windows Server 2022 | x86_64-pc-windows-msvc | NSIS EXE, MSI |
 | Ubuntu 22.04 | x86_64-unknown-linux-gnu | AppImage, DEB |
 
-Packaging changes trigger release builds on branches. The workflow can also be dispatched manually once available on the default branch. Branch and manual runs upload build artifacts without creating a release. Artifacts expire after 14 days.
+Version tags trigger release builds. The workflow can also be dispatched manually for a selected branch. Manual runs upload build artifacts without creating a release. Branch pushes run the test workflow; they do not duplicate the tag's release jobs. Artifacts expire after 14 days.
 
 Every package job runs formatting checks, all-target tests, and Clippy before packaging. Tauri CLI is pinned to 2.12.4. Package names include the Cargo version and platform, with a SHA-256 manifest for each platform.
 

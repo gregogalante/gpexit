@@ -3,19 +3,8 @@ name: Release builds
 on:
   workflow_dispatch:
   push:
-    branches:
-      - '**'
     tags:
       - 'v[0-9]*'
-    paths:
-      - '.github/workflows/release.yml'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
-      - 'tauri.conf.json'
-      - 'icons/**'
-      - 'platform/**'
-      - 'scripts/**'
-      - 'examples/release_artifacts.rs'
 
 permissions:
   contents: read
@@ -92,6 +81,8 @@ jobs:
             ~/.cargo/git
             target
           key: package-${{ runner.os }}-${{ matrix.target }}-tauri-${{ env.TAURI_CLI_VERSION }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            package-${{ runner.os }}-${{ matrix.target }}-tauri-${{ env.TAURI_CLI_VERSION }}-
       - name: Install pinned Tauri packaging CLI
         shell: bash
         run: |

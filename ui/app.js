@@ -541,6 +541,10 @@ let cleanupGroups = []
 function updateCleanupSelection() {
   const count = cleanupSelection.size
   const size = [...cleanupSelection.values()].reduce((sum, item) => sum + item.size, 0)
+  $('cleanup-busy').hidden = !state.task.running
+  $('cleanup-selection-hint').textContent = state.task.running
+    ? 'Selezione e cestino bloccati fino al termine dell’attività. Segui l’avanzamento in Attività.'
+    : 'Seleziona tu i file · massimo 500 · dimensione logica indicativa'
   $('cleanup-selection-count').textContent = count ? `${count} file ${count === 1 ? 'selezionato' : 'selezionati'} · ${bytes(size)}` : 'Nessun file selezionato'
   $('cleanup-clear').disabled = !count || busy || state.task.running || !state.configured
   $('cleanup-trash').disabled = !count || count > 500 || busy || state.task.running || !state.configured
@@ -561,6 +565,7 @@ function renderCleanupItem(item) {
   checkbox.type = 'checkbox'
   checkbox.dataset.operation = ''
   checkbox.dataset.cleanupPath = item.path
+  checkbox.setAttribute('aria-describedby', 'cleanup-selection-hint')
   checkbox.checked = cleanupSelection.has(item.path)
   checkbox.setAttribute('aria-label', 'Seleziona ' + item.path)
   checkbox.addEventListener('change', () => {
@@ -731,6 +736,7 @@ for (const id of ['cleanup-min-size', 'cleanup-gap', 'cleanup-distance', 'cleanu
 $('cleanup-clear').addEventListener('click', () => run(async () => { cleanupSelection.clear(); $('cleanup-items').querySelectorAll('input[data-cleanup-path]').forEach(input => { input.checked = false }); updateCleanupSelection() }, true))
 $('cleanup-trash').addEventListener('click', () => run(cleanupTrash, true))
 $('cleanup-return').addEventListener('click', () => view('cleanup'))
+$('cleanup-show-task').addEventListener('click', () => view('tasks'))
 run(initialize, true)
 setInterval(async () => {
   if (polling || busy) return

@@ -196,6 +196,10 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; overflow: auto; max-height
 .cleanup-filters { padding: 0 1px; }
 .cleanup-selection { position: sticky; top: 10px; z-index: 4; display: flex; justify-content: space-between; align-items: center; gap: 18px; padding: 15px 18px; margin-bottom: 23px; border: 1px solid #d6dfce; border-radius: 8px; background: #f0f5e9; box-shadow: 0 4px 12px #23331f07; }
 .cleanup-selection strong { display: block; font-size: 12px; font-weight: 630; color: #445d38; }
+.cleanup-busy { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px; margin-bottom: 18px; border: 1px solid #d9bc80; border-radius: 8px; background: #fff6e3; color: #74551b; }
+.cleanup-busy strong { font-size: 14px; }
+.cleanup-busy p { margin-top: 6px; font-size: 12px; line-height: 1.6; }
+.cleanup-busy button { flex-shrink: 0; }
 .cleanup-selection p { margin-top: 5px; font-size: 10px; color: #829174; }
 .cleanup-selection .row { flex-shrink: 0; }
 .cleanup-selection button { font-size: 11px; }

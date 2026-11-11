@@ -2,6 +2,8 @@ name: Rust checks
 
 on:
   push:
+    branches:
+      - '**'
   pull_request:
 
 permissions:
@@ -40,6 +42,8 @@ jobs:
             ~/.cargo/git
             target
           key: desktop-macos-15-tauri-2.12.4-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            desktop-macos-15-tauri-2.12.4-
       - name: Install packaging CLI
         run: |
           if [ "$(cargo tauri --version 2>/dev/null || true)" != 'tauri-cli 2.12.4' ]; then
