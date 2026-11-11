@@ -17,3 +17,7 @@ trash/
 *.sqlite3-journal
 *.sqlite3-wal
 *.sqlite3-shm
+
+# Rust desktop build artifacts
+/target/
+/gen/

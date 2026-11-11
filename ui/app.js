@@ -1,33 +1,9 @@
-<!doctype html>
-<html lang="it">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GPExit · Archivio locale</title>
-<style>
-:root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#23332b;background:#f4f5ef;font-size:15px}*{box-sizing:border-box}body{margin:0}button,input{font:inherit}button{cursor:pointer;border:1px solid #ccd5ca;background:white;border-radius:9px;padding:10px 15px;color:#23332b}button:hover{background:#edf1e8}button:disabled{opacity:.45;cursor:not-allowed}.primary{background:#275a40;color:white;border-color:#275a40}.primary:hover{background:#1d4932}.shell{display:grid;grid-template-columns:230px 1fr;min-height:100vh}aside{padding:34px 22px;background:#e7ecdf;border-right:1px solid #d7ddce;display:flex;flex-direction:column;gap:30px}.brand{font-size:29px;font-weight:750;letter-spacing:-1.5px}.brand span{color:#658260}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:1.7px;font-weight:700;color:#687a66}.local{font-size:12px;margin-top:8px;color:#687a66}.local:before{content:'●';color:#598750;margin-right:7px}nav{display:grid;gap:7px}nav button{display:flex;align-items:center;gap:12px;text-align:left;background:transparent;border-color:transparent;padding:12px;white-space:nowrap;flex-shrink:0}nav .nav-number{font-size:11px;font-weight:600;letter-spacing:.5px;color:#687a66;font-variant-numeric:tabular-nums}nav button.active .nav-number{color:#275a40}nav button.active{background:#fff;font-weight:650;box-shadow:0 2px 6px #243b2210}.aside-note{margin-top:auto;color:#66715f;font-size:12px;line-height:1.6}main{padding:42px 5vw;max-width:1500px;width:100%;min-width:0}header{display:flex;justify-content:space-between;gap:15px;align-items:center;margin-bottom:32px}h1{font-size:32px;letter-spacing:-1px;margin:7px 0 10px}h2{font-size:19px;margin:0 0 12px}p{color:#687467;line-height:1.6;margin:8px 0}.status{border:1px solid #d7dece;border-radius:30px;padding:8px 13px;background:white;font-size:12px;white-space:nowrap}.card{background:#fff;border:1px solid #dce1d4;border-radius:15px;padding:24px;margin-bottom:20px}.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.spread{justify-content:space-between}.muted{color:#687467;font-size:13px}.path{overflow-wrap:anywhere;font-family:ui-monospace,monospace;font-size:12px}.file{display:flex;gap:12px;align-items:center;padding:15px 0;border-top:1px solid #edf0e8}.file:first-child{border-top:0}.file-name{flex:1;overflow-wrap:anywhere}.size{font-size:13px;color:#76816d;white-space:nowrap}input[type=password],input[type=date]{border:1px solid #ccd5ca;border-radius:9px;padding:10px;background:white;max-width:100%}input[type=checkbox]{accent-color:#275a40;width:17px;height:17px}.empty{padding:25px 0;text-align:center;color:#7a8374}.error{background:#fff0ec;border:1px solid #edbcb0;color:#9a3b28;border-radius:10px;padding:14px;margin-bottom:20px;white-space:pre-wrap}.review{display:grid;grid-template-columns:minmax(230px,1.1fr) minmax(250px,1fr);gap:24px}.preview{background:#edf0e9;border-radius:10px;min-height:280px;display:flex;align-items:center;justify-content:center;overflow:hidden}.preview img,.preview video{max-width:100%;max-height:450px;object-fit:contain}.dates{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0}.date-info{padding:12px;background:#f5f7f1;border-radius:8px}.date-info strong{display:block;font-size:14px;margin-top:5px}.quick{display:flex;gap:7px;flex-wrap:wrap;margin:15px 0}.quick button{font-size:12px;padding:8px 10px}.pager{display:flex;justify-content:center;align-items:center;gap:15px;padding:10px}pre{background:#18291f;color:#d6e2d3;border-radius:10px;padding:18px;max-height:60vh;overflow:auto;font-size:12px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}section[hidden],#error[hidden]{display:none}footer{font-size:12px;color:#7a8374;margin-top:35px}
-@media(max-width:800px){.shell{grid-template-columns:1fr}aside{padding:18px;gap:17px;border-right:0;border-bottom:1px solid #d7ddce}.brand{font-size:25px}nav{display:flex;gap:5px;overflow:auto}nav button{white-space:nowrap;padding:9px}.aside-note,.local{display:none}main{padding:26px 18px}.review{grid-template-columns:1fr}header{align-items:flex-start}h1{font-size:27px}.card{padding:18px}.preview{min-height:200px}.status{font-size:11px}}
-.storage-bar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:26px}.storage-stat{border:1px solid #dce1d4;background:#fff;border-radius:10px;padding:14px}.storage-stat strong{display:block;margin:7px 0;font-size:19px;letter-spacing:-.5px}.storage-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px}.storage-heading button{font-size:12px;padding:7px 10px}.subtabs{display:flex;gap:8px;border-bottom:1px solid #dce1d4;margin-bottom:22px;padding-bottom:12px;overflow:auto}.subtabs button{white-space:nowrap}.subtabs button.active{background:#275a40;color:white;border-color:#275a40}.gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:18px}.gallery-card{padding:14px;min-width:0}.gallery-card .preview{height:230px;min-height:0;margin-bottom:14px}.gallery-card .preview img,.gallery-card .preview video{max-height:230px}.gallery-card .row{margin-top:14px;gap:8px}.gallery-card button{font-size:12px;padding:9px 10px}.gallery-card .path{min-height:34px}.review-pane[hidden]{display:none}select{font:inherit;background:white;border:1px solid #ccd5ca;border-radius:9px;padding:9px}.trash-row{gap:20px}.trash-row .file-name{min-width:0}.trash-row button{flex-shrink:0}.kept-badge{color:#275a40;font-weight:650}.stats-note{font-size:11px;color:#687467}@media(max-width:1050px){.storage-bar{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:600px){.storage-bar{grid-template-columns:repeat(2,minmax(0,1fr))}.storage-stat:last-child{grid-column:span 2}.gallery-grid{grid-template-columns:1fr}.trash-row{flex-wrap:wrap}.trash-row .file-name{flex-basis:100%}}
-</style>
-</head>
-<body>
-<div class="shell">
-<aside><div><div class="brand">GP<span>Exit</span></div><div class="local">Archivio locale</div></div><nav aria-label="Navigazione"><button class="active" data-view="inputs"><span class="nav-number" aria-hidden="true">01</span>Importazione</button><button data-view="gallery"><span class="nav-number" aria-hidden="true">02</span>Gallery e date</button><button data-view="exports"><span class="nav-number" aria-hidden="true">03</span>Esportazione</button><button data-view="tasks"><span class="nav-number" aria-hidden="true">04</span>Attività</button></nav><div class="aside-note">I tuoi ricordi, sul tuo computer.<br>Originali ZIP conservati negli inputs.</div></aside>
-<main><header><div><div class="eyebrow">Google Photos → archivio personale</div><h1 id="title">Inputs e importazione</h1><p id="subtitle">Scegli gli archivi da aggiungere alla tua gallery.</p></div><div id="status" class="status" role="status">Connessione…</div></header>
-<div class="storage-heading"><span class="eyebrow">Spazio archivio</span><button id="refresh-storage" data-operation>Aggiorna spazio</button></div><div id="storage" class="storage-bar" aria-live="polite"><div class="muted">Calcolo dello spazio…</div></div>
-<div id="error" class="error" role="alert" hidden></div>
-<section id="inputs"><div class="card"><div class="row spread"><h2>Archivi disponibili</h2><button id="refresh">Aggiorna elenco</button></div><p class="muted">Inserisci i file ZIP nella cartella inputs del progetto.</p><div id="input-list"></div></div><div class="card"><h2>Importa nella gallery</h2><p>Foto e video vengono organizzati per anno e mese. I contenuti identici vengono riconosciuti automaticamente.</p><div class="row"><input id="import-password" type="password" placeholder="Password ZIP, se richiesta" aria-label="Password ZIP inputs" autocomplete="off"><button id="import" class="primary" data-mutation>Importa ZIP selezionati</button></div></div></section>
-<section id="gallery" hidden><div class="subtabs" role="tablist" aria-label="Viste gallery"><button class="active" data-gallery-view="browse" role="tab" aria-selected="true">Sfoglia</button><button data-gallery-view="dates" role="tab" aria-selected="false">Date da verificare</button><button data-gallery-view="trash" role="tab" aria-selected="false">Cestino</button></div>
-<div id="browse-pane" class="review-pane"><div class="card"><div class="row spread"><div><h2>La tua gallery</h2><p id="browse-count" class="muted">Sfoglia foto e video e scegli cosa tenere.</p></div><div class="row"><select id="year-filter" aria-label="Anno gallery" data-operation><option value="">Tutti gli anni</option></select><select id="month-filter" aria-label="Mese gallery" data-operation><option value="">Tutti i mesi</option></select><select id="review-filter" aria-label="Filtro gallery" data-operation><option value="pending">Da rivedere</option><option value="all">Tutti i file</option></select><button id="refresh-gallery" data-operation>Aggiorna</button></div></div></div><div id="gallery-items" class="gallery-grid"></div><div id="browse-pager" class="pager" hidden><button id="browse-previous" data-operation>← Precedente</button><span id="browse-page-label"></span><button id="browse-next" data-operation>Successiva →</button></div></div>
-<div id="dates-pane" class="review-pane" hidden><div class="card"><div class="row spread"><div><h2>Date da verificare</h2><p class="muted" id="conflict-count">Confronta nome del file e data Google.</p></div><button id="scan" class="primary" data-mutation>Scansiona gallery</button></div><p class="muted">Le date Google sono lette in UTC. Uno scarto di un giorno può dipendere dal fuso orario. Scegli una data per spostare il file e salvare la correzione.</p></div><div id="conflicts"><div class="card empty">Avvia la scansione per vedere i conflitti.</div></div><div class="pager" id="pager" hidden><button id="previous">← Precedente</button><span id="page-label"></span><button id="next">Successiva →</button></div></div>
-<div id="trash-pane" class="review-pane" hidden><div class="card"><div class="row spread"><div><h2>Cestino</h2><p id="trash-count" class="muted">I file restano sul disco e possono essere ripristinati.</p></div><button id="refresh-trash" data-operation>Aggiorna cestino</button></div><div id="trash-items"></div></div><div id="trash-pager" class="pager" hidden><button id="trash-previous" data-operation>← Precedente</button><span id="trash-page-label"></span><button id="trash-next" data-operation>Successiva →</button></div></div></section>
-<section id="exports" hidden><div class="card"><h2>Crea ZIP annuali</h2><p>Esporta la gallery in archivi annuali nella cartella exports, separata dalle foto. Gli ZIP annuali già presenti vengono aggiornati.</p><div class="row"><input id="export-password" type="password" placeholder="Password AES-256, facoltativa" aria-label="Password esportazione" autocomplete="new-password"><input id="export-password-confirmation" type="password" placeholder="Ripeti password" aria-label="Conferma password esportazione" autocomplete="new-password"><button id="export" class="primary" data-mutation>Crea archivi ZIP</button></div></div><div class="card"><h2>Archivi esportati</h2><div id="export-list"></div></div></section>
-<section id="tasks" hidden><div class="card"><h2>Attività e avanzamento</h2><p class="muted">Un task alla volta protegge la coerenza della gallery.</p><pre id="log" aria-live="polite">Nessuna attività.</pre></div></section>
-<footer>Gallery: <span id="gallery-path" class="path">—</span></footer></main></div>
-<script>
 const $ = id => document.getElementById(id)
-let state = { task: { running: false } }
-let currentView = 'inputs'
+const native = window.__TAURI__.core
+let state = { configured: false, task: { running: false } }
+let folders = { inputs: '', gallery: '', exports: '' }
+let cancelling = false
+let currentView = 'settings'
 let galleryView = 'browse'
 let busy = false
 let polling = false
@@ -44,30 +20,34 @@ const titles = {
   inputs: ['Inputs e importazione', 'Scegli gli archivi da aggiungere alla tua gallery.'],
   gallery: ['Gallery e date', 'Sfoglia i tuoi ricordi e scegli cosa conservare.'],
   exports: ['Esportazione ZIP', 'Prepara una copia annuale del tuo archivio.'],
-  tasks: ['Attività', 'Segui le operazioni in corso e consulta il risultato.']
+  tasks: ['Attività', 'Segui le operazioni in corso e consulta il risultato.'],
+  settings: ['Impostazioni', 'Scegli dove conservare i tuoi archivi.']
 }
 function showError(error) {
-  $('error').textContent = error.message || String(error)
+  $('error').textContent = error?.message || String(error)
   $('error').hidden = false
 }
 function clearError() { $('error').hidden = true }
 function view(name) {
+  if (!state.configured && name !== 'settings') name = 'settings'
   currentView = name
   for (const key of Object.keys(titles)) $(key).hidden = key !== name
   document.querySelectorAll('[data-view]').forEach(button => button.classList.toggle('active', button.dataset.view === name))
   $('title').textContent = titles[name][0]
   $('subtitle').textContent = titles[name][1]
-  if (name === 'gallery' && !state.task.running) run(loadActiveGallery, true)
+  if (name === 'gallery' && state.configured && !state.task.running) run(loadActiveGallery, true)
 }
 async function api(path, body) {
-  const options = body === undefined ? {} : {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-GPExit-Token': state.token || '' },
-    body: JSON.stringify(body)
+  if (!state.configured && !['/api/state', '/api/settings'].includes(path)) {
+    throw new Error('Scegli e salva le tre cartelle nelle impostazioni prima di iniziare.')
   }
-  const response = await fetch(path, options)
-  const result = await response.json()
-  if (!response.ok) throw new Error(result.error || `Errore HTTP ${response.status}`)
+  const result = await native.invoke('api_request', {
+    method: body === undefined ? 'GET' : 'POST', path, body: body === undefined ? null : body
+  })
+  if (result?.error) {
+    if (body === undefined && ['/api/state', '/api/settings'].includes(path)) showError(new Error(result.error))
+    else throw new Error(result.error)
+  }
   return result
 }
 function bytes(value) {
@@ -90,6 +70,9 @@ function actionButton(label, operation, className = '') {
 }
 function renderFiles(id, files, selectable) {
   const root = $(id)
+  const signature = JSON.stringify(files)
+  if (root.dataset.signature === signature) return
+  root.dataset.signature = signature
   const selected = new Set([...root.querySelectorAll('input:checked')].map(input => input.value))
   root.replaceChildren()
   if (!files.length) root.append(element('div', 'empty', 'Nessun archivio disponibile.'))
@@ -108,12 +91,15 @@ function renderFiles(id, files, selectable) {
   }
 }
 function setBusy() {
-  const locked = state.task.running || busy
+  const locked = state.task.running || busy || !state.configured
   document.querySelectorAll('[data-mutation], [data-operation]').forEach(control => {
     control.disabled = locked || control.dataset.kept === 'true'
   })
   document.querySelectorAll('[data-gallery-view]').forEach(button => { button.disabled = locked })
-  document.querySelectorAll('[data-view]').forEach(button => { button.disabled = busy })
+  document.querySelectorAll('[data-view]').forEach(button => { button.disabled = busy || (!state.configured && button.dataset.view !== 'settings') })
+  document.querySelectorAll('[data-settings]').forEach(button => { button.disabled = busy || state.task.running })
+  $('save-settings').disabled = busy || state.task.running || Object.values(folders).some(path => !path)
+  $('cancel-task').disabled = !state.task.running || state.task.cancel_requested || cancelling
   $('input-list').querySelectorAll('input').forEach(input => { input.disabled = locked })
   $('previous').disabled = page <= 1 || locked
   $('next').disabled = page >= pages || locked
@@ -123,6 +109,7 @@ function setBusy() {
   $('trash-next').disabled = trashPage >= trashPages || locked
 }
 async function refreshStorage() {
+  if (!state.configured) return
   const storage = await api('/api/storage')
   const cards = []
   for (const [key, label] of [['inputs', 'Inputs'], ['gallery', 'Gallery'], ['exports', 'Exports'], ['trash', 'Cestino']]) {
@@ -140,13 +127,19 @@ async function refresh() {
   const wasRunning = state.task.running
   state = await api('/api/state')
   $('status').textContent = state.task.running ? '● Operazione in corso' : (state.task.status || 'Pronto')
-  $('gallery-path').textContent = state.gallery
-  renderFiles('input-list', state.inputs, true)
-  renderFiles('export-list', state.exports, false)
+  $('gallery-path').textContent = state.folders?.gallery || state.gallery || 'Non configurata'
+  $('storage-overview').hidden = !state.configured
+  if (!state.configured) {
+    view('settings')
+  } else {
+    renderFiles('input-list', state.inputs || [], true)
+    renderFiles('export-list', state.exports || [], false)
+  }
+  renderProgress()
   const log = Array.isArray(state.task.log) ? state.task.log.join('\n') : state.task.log
   $('log').textContent = log || 'Nessuna attività.'
   setBusy()
-  if (wasRunning && !state.task.running) {
+  if (wasRunning && !state.task.running && state.configured) {
     browseLoaded = false
     galleryOptionsLoaded = false
     trashLoaded = false
@@ -160,6 +153,7 @@ async function task(action) {
     body.inputs = [...$('input-list').querySelectorAll('input:checked')].map(input => input.value)
     if (!body.inputs.length) throw new Error('Seleziona almeno uno ZIP da importare.')
     body.password = $('import-password').value
+    body.workers = Number($('workers').value)
   }
   if (action === 'export') {
     body.password = $('export-password').value
@@ -175,26 +169,50 @@ async function task(action) {
   view('tasks')
   await refresh()
 }
+const previewQueue = []
+let activePreviews = 0
 const lazyMedia = new IntersectionObserver(entries => {
   for (const entry of entries) {
     if (!entry.isIntersecting) continue
-    entry.target.src = entry.target.dataset.src
     lazyMedia.unobserve(entry.target)
+    previewQueue.push(entry.target)
   }
+  drainPreviews()
 }, { rootMargin: '200px' })
+async function drainPreviews() {
+  while (activePreviews < 3 && previewQueue.length) {
+    const media = previewQueue.shift()
+    if (!media.isConnected) continue
+    activePreviews += 1
+    native.invoke('media_source', { path: media.dataset.path })
+      .then(result => {
+        if (media.isConnected) media.src = native.convertFileSrc(result.path)
+      })
+      .catch(() => previewError(media))
+      .finally(() => { activePreviews -= 1; drainPreviews() })
+  }
+}
+function previewError(media) {
+  if (!media.isConnected) return
+  media.parentElement.replaceChildren(element('span', 'muted', 'Anteprima non disponibile per questo formato.'))
+}
 function mediaPreview(item) {
   const preview = element('div', 'preview')
   const video = item.kind === 'videos'
   const media = document.createElement(video ? 'video' : 'img')
   if (video) { media.controls = true; media.preload = 'metadata' } else { media.alt = item.path; media.loading = 'lazy' }
-  media.dataset.src = '/api/media?path=' + encodeURIComponent(item.path)
-  media.addEventListener('error', () => preview.replaceChildren(document.createTextNode('Anteprima non disponibile per questo formato.')))
+  media.dataset.path = item.path
+  media.addEventListener('error', () => previewError(media))
   preview.append(media)
   lazyMedia.observe(media)
   return preview
 }
 function clearPreviews(root) {
-  root.querySelectorAll('img, video').forEach(media => lazyMedia.unobserve(media))
+  root.querySelectorAll('img, video').forEach(media => {
+    lazyMedia.unobserve(media)
+    if (media.tagName === 'VIDEO') media.pause()
+    media.removeAttribute('src')
+  })
   root.replaceChildren()
 }
 function dateInfo(label, value) {
@@ -230,9 +248,9 @@ function renderConflict(item) {
   card.append(mediaPreview(item), details)
   return card
 }
-async function loadConflicts(target = 1) {
+async function loadConflicts(target = 1, refresh = false) {
   $('conflict-count').textContent = 'Scansione in corso…'
-  const result = await api('/api/conflicts?page=' + target)
+  const result = await api('/api/conflicts?page=' + target + (refresh ? '&refresh=1' : ''))
   page = result.page
   pages = result.pages
   $('conflict-count').textContent = `${result.total} file da verificare`
@@ -329,7 +347,7 @@ function galleryTab(name) {
     button.classList.toggle('active', active)
     button.setAttribute('aria-selected', String(active))
   })
-  if (!state.task.running) run(loadActiveGallery, true)
+  if (state.configured && !state.task.running) run(loadActiveGallery, true)
 }
 async function run(operation, exclusive = false) {
   if (exclusive && (busy || state.task.running)) return
@@ -339,13 +357,92 @@ async function run(operation, exclusive = false) {
     if (exclusive) { busy = false; setBusy() }
   }
 }
+function renderProgress() {
+  const task = state.task
+  const done = Number(task.done || 0)
+  const total = Number(task.total || 0)
+  if (total > 0) {
+    $('task-progress').max = total
+    $('task-progress').value = Math.min(done, total)
+    $('progress-label').textContent = `${done} / ${total}${task.cancel_requested ? ' · Annullamento richiesto' : ''}`
+  } else {
+    $('task-progress').removeAttribute('value')
+    $('progress-label').textContent = task.running ? (task.cancel_requested ? 'Annullamento richiesto…' : 'Operazione in corso…') : 'Nessuna attività in corso.'
+    if (!task.running) { $('task-progress').max = 1; $('task-progress').value = 0 }
+  }
+  $('cancel-task').textContent = task.cancel_requested ? 'Annullamento richiesto' : 'Annulla attività'
+}
+function renderFolders() {
+  $('folder-choices').replaceChildren()
+  for (const [kind, title, hint] of [
+    ['inputs', 'Inputs', 'Cartella con gli ZIP originali da importare.'],
+    ['gallery', 'Gallery', 'Cartella per foto, video, metadati e decisioni di revisione.'],
+    ['exports', 'Exports', 'Cartella in cui salvare gli ZIP annuali.']
+  ]) {
+    const choice = element('div', 'folder-choice')
+    const row = element('div', 'row')
+    const button = element('button', '', folders[kind] ? 'Cambia cartella' : 'Scegli cartella')
+    button.dataset.settings = ''
+    button.addEventListener('click', () => run(async () => {
+      const selected = await native.invoke('pick_folder', { kind })
+      if (selected) { folders[kind] = selected; renderFolders() }
+    }, true))
+    row.append(element('span', 'path', folders[kind] || 'Nessuna cartella selezionata'), button)
+    choice.append(element('h3', '', title), element('p', 'muted', hint), row)
+    $('folder-choices').append(choice)
+  }
+  $('settings-heading').textContent = state.configured ? 'Cartelle del tuo archivio' : 'Prima di iniziare, scegli tre cartelle'
+  $('settings-summary').textContent = state.configured ? 'Le modifiche saranno applicate dopo il salvataggio.' : 'Seleziona tutte e tre le cartelle per iniziare.'
+  setBusy()
+}
+async function saveSettings() {
+  if (Object.values(folders).some(path => !path)) throw new Error('Scegli tutte e tre le cartelle.')
+  await api('/api/settings', folders)
+  browseLoaded = false
+  trashLoaded = false
+  galleryOptionsLoaded = false
+  clearPreviews($('gallery-items'))
+  clearPreviews($('conflicts'))
+  $('trash-items').replaceChildren()
+  await refresh()
+  renderFolders()
+  await refreshStorage()
+  view('inputs')
+  notify('Cartelle salvate. Puoi iniziare a gestire il tuo archivio.')
+}
+function notify(message) {
+  $('notice').textContent = message
+  $('notice').hidden = false
+}
+async function saveReport() {
+  const result = await native.invoke('save_report')
+  const path = typeof result === 'string' ? result : result?.path
+  if (path) notify('Rapporto CSV salvato: ' + path)
+}
+async function cancelTask() {
+  if (cancelling || !state.task.running || state.task.cancel_requested) return
+  cancelling = true
+  setBusy()
+  try { await api('/api/cancel', {}); await refresh() } finally { cancelling = false; setBusy() }
+}
+async function initialize() {
+  const settings = await api('/api/settings')
+  folders = { inputs: '', gallery: '', exports: '', ...(settings.folders || {}) }
+  await refresh()
+  renderFolders()
+  if (state.configured) { await refreshStorage(); view('inputs') }
+  else view('settings')
+}
 document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => view(button.dataset.view)))
 document.querySelectorAll('[data-gallery-view]').forEach(button => button.addEventListener('click', () => galleryTab(button.dataset.galleryView)))
-$('refresh').addEventListener('click', () => run(refresh))
+$('refresh').addEventListener('click', () => run(refresh, true))
+$('save-settings').addEventListener('click', () => run(saveSettings, true))
+$('save-report').addEventListener('click', () => run(saveReport, true))
+$('cancel-task').addEventListener('click', () => run(cancelTask))
 $('refresh-storage').addEventListener('click', () => run(refreshStorage, true))
 $('import').addEventListener('click', () => run(() => task('import'), true))
 $('export').addEventListener('click', () => run(() => task('export'), true))
-$('scan').addEventListener('click', () => run(() => loadConflicts(1), true))
+$('scan').addEventListener('click', () => run(() => loadConflicts(1, true), true))
 $('previous').addEventListener('click', () => run(() => loadConflicts(page - 1), true))
 $('next').addEventListener('click', () => run(() => loadConflicts(page + 1), true))
 $('refresh-gallery').addEventListener('click', () => run(() => loadGallery(browsePage, true), true))
@@ -355,12 +452,9 @@ $('browse-next').addEventListener('click', () => run(() => loadGallery(browsePag
 $('refresh-trash').addEventListener('click', () => run(() => loadTrash(trashPage), true))
 $('trash-previous').addEventListener('click', () => run(() => loadTrash(trashPage - 1), true))
 $('trash-next').addEventListener('click', () => run(() => loadTrash(trashPage + 1), true))
-run(async () => { await refresh(); await refreshStorage() })
+run(initialize, true)
 setInterval(async () => {
-  if (polling) return
+  if (polling || busy) return
   polling = true
   try { await refresh() } catch (error) { showError(error) } finally { polling = false }
-}, 2000)
-</script>
-</body>
-</html>
+}, 1000)

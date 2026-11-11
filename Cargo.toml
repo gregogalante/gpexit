@@ -1,0 +1,50 @@
+[package]
+name = "gpexit-desktop"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.91"
+description = "Local Google Photos archive manager"
+license = "MIT"
+
+[lib]
+name = "gpexit_core"
+path = "src/lib.rs"
+
+[[bin]]
+name = "gpexit-desktop"
+path = "src/main.rs"
+required-features = ["desktop"]
+
+[features]
+default = ["desktop", "custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+desktop = ["dep:tauri", "dep:rfd"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+anyhow = "1"
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.11"
+hex = "0.4"
+regex = "1"
+walkdir = "2"
+tempfile = "3"
+rusqlite = { version = "0.37", features = ["bundled"] }
+zip = { version = "9.5", default-features = false, features = ["aes-crypto", "deflate", "bzip2", "zstd", "lzma", "deflate64"] }
+kamadak-exif = "0.6"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "gif", "webp", "tiff", "bmp"] }
+jpeg-decoder = "0.3"
+fs2 = "0.4"
+uuid = { version = "1", features = ["v4"] }
+url = "2"
+directories = "6"
+tauri = { version = "2", optional = true, features = ["protocol-asset"] }
+rfd = { version = "0.17", optional = true }
+
+[profile.release]
+lto = "thin"
+strip = true
