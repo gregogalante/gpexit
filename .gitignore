@@ -22,3 +22,6 @@ trash/
 /target/
 /gen/
 /dist/
+
+# Copied from icons/ by the Pages workflow
+site/icon.png

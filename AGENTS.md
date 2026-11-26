@@ -16,6 +16,7 @@ GPExit is a standalone Rust/Tauri desktop application for importing Google Photo
 - `src/main.rs`: native window, folder/save dialogs, IPC, asset scopes, and shutdown.
 - `ui/`: bundled frontend assets without a Node build step.
 - `tests/`: temporary-fixture integration tests.
+- `site/`: static GitHub Pages website, deployed by `.github/workflows/pages.yml`.
 
 ## Data and safety
 
