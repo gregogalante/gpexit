@@ -43,7 +43,11 @@ function applyRelease (release) {
     const primary = document.getElementById('primary-download')
     primary.href = url
     primary.textContent = LABELS[suffix]
-    document.getElementById('release-note').textContent = `${version} · Other platforms below`
+    const note = document.getElementById('release-note')
+    note.textContent = `${version} · Other platforms below`
+    if (suffix.startsWith('macos')) {
+      note.append(' · ', Object.assign(document.createElement('a'), { href: '#macos', textContent: 'First launch on macOS' }))
+    }
   }
 }
 

@@ -13,6 +13,19 @@ Install the package for your system from [Releases](https://github.com/gregogala
 | Windows, x64 | `windows-x64-setup.exe` or `windows-x64.msi` |
 | Linux, x64 | `linux-x64.AppImage` or `linux-x64.deb` |
 
+### Opening GPExit on macOS
+
+GPExit is not yet notarized by Apple, so macOS blocks the first launch with a message that the app cannot be verified or is damaged. Drag GPExit to Applications, then allow it once in either way:
+
+- Try to open GPExit, then go to **System Settings → Privacy & Security** and click **Open Anyway**.
+- Or run in Terminal:
+
+  ```sh
+  xattr -dr com.apple.quarantine /Applications/GPExit.app
+  ```
+
+Later launches open normally. Verify the download against `SHA256SUMS.txt` before allowing it.
+
 On first launch, select three existing folders using the native folder pickers:
 
 - **Inputs:** Your Google Photos Takeout ZIP files.
