@@ -65,6 +65,16 @@
       </ul>
       <p class="note"><a data-asset="SHA256SUMS.txt" href="https://github.com/gregogalante/gpexit/releases/latest">SHA-256 checksums</a></p>
     </section>
+
+    <section id="macos" class="macos">
+      <h2>Opening GPExit on macOS</h2>
+      <p>GPExit is not yet notarized by Apple, so macOS blocks the first launch with a message that the app cannot be verified or is damaged. Drag GPExit to Applications, then allow it once:</p>
+      <ol>
+        <li>Try to open GPExit, then go to <strong>System Settings → Privacy &amp; Security</strong> and click <strong>Open Anyway</strong>.</li>
+        <li>Or run in Terminal: <code>xattr -dr com.apple.quarantine /Applications/GPExit.app</code></li>
+      </ol>
+      <p>Later launches open normally.</p>
+    </section>
   </main>
 
   <footer>
