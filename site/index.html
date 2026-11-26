@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GPExit — Take your Google Photos home</title>
+  <meta name="description" content="Desktop app to import Google Photos Takeout archives, fix dates, clean up your gallery, and export annual backups. Everything runs locally.">
+  <link rel="icon" href="icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="./"><img src="icon.png" alt="" width="32" height="32">GPExit</a>
+    <a class="quiet-link" href="https://github.com/gregogalante/gpexit">GitHub</a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <p class="eyebrow"><span class="local-dot"></span>Local, open source, free</p>
+      <h1>Take your Google Photos home.</h1>
+      <p class="lead">Import your Takeout ZIP files, fix capture dates, clean up duplicates and blurry shots, and create encrypted annual backups. Every photo stays on your computer.</p>
+      <div class="cta">
+        <a id="primary-download" class="button primary" href="https://github.com/gregogalante/gpexit/releases/latest">Download GPExit</a>
+        <a class="button" href="#downloads">All platforms</a>
+      </div>
+      <p id="release-note" class="note">macOS, Windows, and Linux</p>
+    </section>
+
+    <section class="features" aria-label="Features">
+      <article>
+        <span class="num">01</span>
+        <h2>Import</h2>
+        <p>Streams AES and ZipCrypto Takeout archives, links Google JSON metadata across ZIP files, deduplicates with SHA-256, and resumes interrupted work.</p>
+      </article>
+      <article>
+        <span class="num">02</span>
+        <h2>Correct dates</h2>
+        <p>Compares filename, Google metadata, and EXIF dates. Manual corrections are written back to the JSON, so they stay portable.</p>
+      </article>
+      <article>
+        <span class="num">03</span>
+        <h2>Clean up</h2>
+        <p>Finds large files, nearby shots, similar photos, and low-detail images. Nothing is preselected and removals go to recoverable trash.</p>
+      </article>
+      <article>
+        <span class="num">04</span>
+        <h2>Back up</h2>
+        <p>Exports one ZIP64 archive per year, optionally encrypted with AES-256, including your review decisions.</p>
+      </article>
+    </section>
+
+    <section class="privacy">
+      <h2>No cloud. No account. No uploads.</h2>
+      <p>GPExit is a native desktop app. Analysis runs on your machine, no models are downloaded, and passwords are never stored.</p>
+    </section>
+
+    <section id="downloads" class="downloads">
+      <h2>Downloads</h2>
+      <p class="note">Latest release: <a id="release-link" href="https://github.com/gregogalante/gpexit/releases/latest">see GitHub Releases</a></p>
+      <ul>
+        <li><span>macOS · Apple Silicon</span><a data-asset="macos-arm64.dmg" href="https://github.com/gregogalante/gpexit/releases/latest">.dmg</a></li>
+        <li><span>macOS · Intel</span><a data-asset="macos-x64.dmg" href="https://github.com/gregogalante/gpexit/releases/latest">.dmg</a></li>
+        <li><span>Windows · x64</span><a data-asset="windows-x64-setup.exe" href="https://github.com/gregogalante/gpexit/releases/latest">Installer .exe</a><a data-asset="windows-x64.msi" href="https://github.com/gregogalante/gpexit/releases/latest">.msi</a></li>
+        <li><span>Linux · x64</span><a data-asset="linux-x64.AppImage" href="https://github.com/gregogalante/gpexit/releases/latest">.AppImage</a><a data-asset="linux-x64.deb" href="https://github.com/gregogalante/gpexit/releases/latest">.deb</a></li>
+      </ul>
+      <p class="note"><a data-asset="SHA256SUMS.txt" href="https://github.com/gregogalante/gpexit/releases/latest">SHA-256 checksums</a></p>
+    </section>
+  </main>
+
+  <footer>
+    <span>MIT License</span>
+    <a href="https://github.com/gregogalante/gpexit#readme">Documentation</a>
+    <a href="https://github.com/gregogalante/gpexit/releases">Release history</a>
+  </footer>
+
+  <script src="site.js"></script>
+</body>
+</html>
